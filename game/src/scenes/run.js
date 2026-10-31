@@ -139,10 +139,9 @@
       if (DK.touchMode) {
         this.touch = new DK.TouchControls(this, [
           // right thumb rests on 开火; the others sit in an arc around it with ≥ 20 px gaps (r ≥ 1.5× the old sizes)
-          { id: 'fire', label: '开火', x: DK.W - 120, y: DK.H - 130, r: 82, kind: 'fire' },
+          { id: 'fire', label: '瞄准', x: DK.W - 120, y: DK.H - 130, r: 82, kind: 'fire' },
           { id: 'dash', label: '冲刺', x: DK.W - 285, y: DK.H - 86, r: 60 },
           { id: 'grenade', label: '手雷', x: DK.W - 262, y: DK.H - 232, r: 50 },
-          { id: 'reload', label: '换弹', x: DK.W - 110, y: DK.H - 300, r: 44 },
           { id: 'swap', label: '切枪', x: DK.W - 228, y: DK.H - 362, r: 40 },
           { id: 'act', label: '互动', x: DK.W - 425, y: DK.H - 72, r: 48, hidden: true }
         ]);
@@ -168,7 +167,7 @@
       objs.push(DK.button(this, W / 2, 210, 240, 50, '继续', () => this.togglePause(), { depth: 1102 }));
       objs.push(...DK.volumeControls(this, W / 2, 290, 1102));
       objs.push(DK.button(this, W / 2, 420, 240, 46, '放弃本轮（计为阵亡）', () => { this.togglePause(); this.playerDie('abandon'); }, { depth: 1102, fontSize: 16, stroke: 0xe74c3c }));
-      if (!DK.touchMode) objs.push(DK.txt(this, W / 2, 490, 'WASD 移动 · 鼠标瞄准/左键射击 · 空格 冲刺 · 按住Q 手雷 · R 换弹 · 1/2/滚轮 切枪 · E 互动', { fontSize: '13px', color: '#aaa' }).setOrigin(0.5).setDepth(1101));
+      if (!DK.touchMode) objs.push(DK.txt(this, W / 2, 490, 'WASD 移动 · 鼠标瞄准（自动射击） · 空格 冲刺 · 按住Q 手雷 · 1/2/滚轮 切枪 · E 互动', { fontSize: '13px', color: '#aaa' }).setOrigin(0.5).setDepth(1101));
       this.pauseUI = objs; this.modal = 'pause';
     }
 
@@ -360,7 +359,6 @@
       const run = this.run;
       if (src !== 'self') {
         run.kills++;
-        if (run.mods.recycle) { const w = this.player.weapon(); run.mag[w.id] = Math.min(w.mag, run.mag[w.id] + 2); }
         if (e.realSkin) this.corpse(e); else this.explode(e.x, e.y, 24, 0, { src: 'fx', visualOnly: true, size: 0.45, quiet: true });
         DK.sfx(this, 'explosion_small', { volume: 0.55, minGap: 60 });
       }
@@ -684,11 +682,10 @@
       h.hp.setText(`${Math.ceil(run.hp)} / ${run.maxHp}`).setPosition(24, 12);
       // ammo / reload
       const mag = run.mag[w.id];
-      h.ammo.setText(`${w.name}  ${p.reloadT > 0 ? '换弹中…' : mag + ' / ' + w.mag}${p.empowered ? '  ★+50%' : ''}`);
-      if (p.reloadT > 0) { g.fillStyle(0x000000, 0.6).fillRect(18, 68 - 2, 120, 4); g.fillStyle(0xf2c14e).fillRect(18, 68 - 2, 120 * (1 - p.reloadT / p.reloadTotal), 4); }
+      h.ammo.setText(`${w.name}  ∞`);
       const ammoNames = run.ammoTypes.map(a => DK.AMMO[a].name.replace('弹', '')).join('+') || '普通';
       const mods = Object.keys(run.mods).length;
-      h.info.setText(`弹种 ${ammoNames} · 手雷 ${run.grenades} · 冲刺 ${p.charges}/${run.dashCharges}${mods ? ' · 改造 ' + mods : ''}`).setPosition(20, p.reloadT > 0 ? 74 : 70);
+      h.info.setText(`弹种 ${ammoNames} · 手雷 ${run.grenades} · 冲刺 ${p.charges}/${run.dashCharges}${mods ? ' · 改造 ' + mods : ''}`).setPosition(20, 70);
       // dash pips under the player
       for (let i = 0; i < run.dashCharges; i++) g.fillStyle(i < p.charges ? 0x7ee07a : 0x333333, 0.9).fillCircle(p.x - (run.dashCharges - 1) * 5 + i * 10, p.y + 30, 3);
       if (p.charges < run.dashCharges && p.dashCdT > 0) g.lineStyle(2, 0x7ee07a, 0.8).beginPath().arc(p.x, p.y, 24, -Math.PI / 2, -Math.PI / 2 + PI2 * (1 - p.dashCdT / DK.PLAYER.dashCd)).strokePath();

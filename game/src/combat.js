@@ -91,8 +91,6 @@
       const w = Object.assign({ id }, b);
       if (!r) return w;
       if (r.mods.bigcal) { w.dmg *= 1.4; w.rate *= 0.75; }
-      if (r.mods.recycle) w.mag = Math.max(1, Math.round(w.mag * 0.8));
-      if (r.mods.ring) w.reload += 0.3;
       if (r.mods.frenzy && this.firingFor >= 3) w.rate *= 1.5;
       w.dmg *= r.dmgMul;
       return w;
@@ -121,11 +119,8 @@
       this.reloadT = 0; this.updateGun(); DK.sfx(this.scene, 'pickup_weapon', { volume: 0.5 });
       DK.floatText(this.scene, this.x, this.y - 34, DK.WEAPONS[r.weapon].name, '#f2e6c9', 14);
     }
-    startReload() {
-      const w = this.weapon(), r = this.run;
-      if (!r || this.reloadT > 0 || r.mag[w.id] >= w.mag) return;
-      this.reloadT = w.reload; this.reloadTotal = w.reload; DK.sfx(this.scene, 'reload');
-      if (r.mods.ring) for (let i = 0; i < 8; i++) this.scene.fireBullet(this.x, this.y, i / 8 * PI2, { dmg: w.dmg, speed: w.speed, procMul: w.procMul, src: 'ring' });
+    ringBurst() { // 爆环 mod: 8 bullets all around every few seconds of combat (reload is gone)
+      const w = this.weapon(); for (let i = 0; i < 8; i++) this.scene.fireBullet(this.x, this.y, i / 8 * PI2, { dmg: w.dmg, speed: w.speed, procMul: w.procMul, src: 'ring' });
     }
     input() {
       const k = this.keys, tc = this.scene.touch;
@@ -151,14 +146,14 @@
       const { mx, my } = this.input();
       if (mx || my) { const l = Math.hypot(mx, my); this.moveDir = { x: mx / l, y: my / l }; }
       // ---- aim
-      let wantFire = false;
+      // always firing during combat (user request): infinite ammo, no reload, no hold-to-fire, no auto-aim at enemies
+      let wantFire = s.state === 'fight' || s.state === 'boss';
       if (DK.touchMode && tc) {
-        // 开火 joystick only: no auto-aim, no auto-fire on touch (user request)
-        if (tc.fireHeld) { wantFire = true; if (tc.fireAim.active) this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x); }
-        else if (mx || my) this.aimAng = Math.atan2(my, mx); // not firing: face where you walk
+        // 瞄准 joystick only steers: keep the last aimed direction; before the first aim, shoot where you face/walk
+        if (tc.fireHeld && tc.fireAim.active) { this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x); this.aimedOnce = true; }
+        else if (!this.aimedOnce && (mx || my)) this.aimAng = Math.atan2(my, mx);
       } else if (mouse) {
         this.aimAng = Math.atan2(mouse.y / DK.R - this.y, mouse.x / DK.R - this.x);
-        wantFire = mouse.isDown && mouse.leftButtonDown && mouse.leftButtonDown();
       }
       if (DK.autoFire) { const t = this.nearestEnemy(900); if (t) { this.aimAng = Math.atan2(t.y - this.y, t.x - this.x); wantFire = true; } } // debug/test helper
       // ---- dash
@@ -187,19 +182,11 @@
       const r = this.run, w = this.weapon();
       if (k) { if (Phaser.Input.Keyboard.JustDown(k.ONE)) this.selectWeapon(0); if (Phaser.Input.Keyboard.JustDown(k.TWO)) this.selectWeapon(1); if (Phaser.Input.Keyboard.JustDown(k.F)) this.swap(1); }
       if (tc && tc.consume('swap')) this.swap(1);
-      if ((k && Phaser.Input.Keyboard.JustDown(k.R)) || (tc && tc.consume('reload'))) this.startReload();
-      if (this.reloadT > 0) {
-        this.reloadT -= dt;
-        if (this.reloadT <= 0) { this.reloadT = 0; r.mag[w.id] = w.mag; this.empowered = true; DK.sfx(s, 'reload', { volume: 0.6 }); }
-      }
       this.fireCd -= dt;
-      if (!wantFire || this.reloadT > 0) this.fireCd = Math.max(this.fireCd, 0); // no banked shots while idle
+      if (!wantFire) this.fireCd = Math.max(this.fireCd, 0); // no banked shots while idle
       if (wantFire) { this.firingFor += dt; this.idleFire = 0; } else { this.idleFire += dt; if (this.idleFire > 0.3) this.firingFor = 0; }
-      if (wantFire && this.reloadT <= 0 && this.fireCd <= 0) {
-        if (r.mag[w.id] > 0) this.fire(w);
-        else { DK.sfx(s, 'dry_fire', { minGap: 200 }); this.startReload(); }
-      }
-      if (r.mag[w.id] > w.mag) r.mag[w.id] = w.mag;
+      if (wantFire && this.fireCd <= 0) this.fire(w);
+      if (r.mods.ring && wantFire) { this.ringT = (this.ringT == null ? 4 : this.ringT) - dt; if (this.ringT <= 0) { this.ringT = 4; this.ringBurst(); } }
       // ---- grenade (hold to preview, release to throw)
       const qDown = (k && k.Q.isDown) || (tc && tc.down.grenade);
       if (qDown && r.grenades > 0) this.grenadeAim = true;
@@ -217,12 +204,12 @@
     }
     fire(w) {
       const s = this.scene, r = this.run;
-      r.mag[w.id]--; this.shots++; this.shootT = w.id === 'mg' ? 0.15 : 0.3;
+      this.shots++; this.shootT = w.id === 'mg' ? 0.15 : 0.3;
       if (w.id !== 'mg' && this.spr.realSkin && this.dashT <= 0 && this.reloadT <= 0) DK.anim(this.spr, 'shoot', { restart: true, startFrame: 1 }); // hero_shoot fires on 01
       this.fireCd = Math.max(this.fireCd, -1 / w.rate) + 1 / w.rate; // accumulate so 4/s and 10/s are exact (review P1-2)
       let dmg = w.dmg, crit = Math.random() < w.crit || (r.mods.fifth && this.shots % 5 === 0);
       if (crit) dmg *= DK.PLAYER.critMul;
-      const powered = this.empowered; if (powered) { dmg *= DK.PLAYER.passiveMul; this.empowered = false; }
+      const powered = false; // (the reload-empowered shot went away with reloading)
       const a = this.aimAng + Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-w.spread, w.spread));
       const reach = this.spr.realSkin ? 26 : 28, mx = this.x + Math.cos(this.aimAng) * reach, my = this.y + (this.spr.realSkin ? -2 : 6) + Math.sin(this.aimAng) * reach;
       s.fireBullet(mx, my, a, { dmg, crit, powered, speed: w.speed, procMul: w.procMul, src: w.id, size: w.bullet });
