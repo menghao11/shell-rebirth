@@ -20,7 +20,10 @@ window.DK = window.DK || {};
     dashSpeed: 640, dashTime: 0.17, dashCd: 0.75, dashCharges: 1, dashGrace: 0.07, // 70 ms i-frame grace after a dash (review P2-9)
     hurtIframes: 0.6, grenades: 10,
     passiveMul: 1.5,               // 马克被动：换弹后下一发 +50%
-    critMul: 2.0
+    critMul: 2.0,
+    // aim (user-approved scheme): auto-fire with soft aim assist = bullets bend toward an enemy within assistDeg of the shot line
+    assistDeg: 18, assistTurn: 4.2, assistTime: 0.5,
+    burst: { n: 5, gap: 0.06, cd: 1.8 } // 瞄准 drag-and-release: 5 fast accurate shots (no spread, no assist)
   };
   DK.GRENADE = { range: 280, radius: 72, dmg: 45, selfDmg: 10, flight: 0.55 };
 

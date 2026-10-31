@@ -1,6 +1,6 @@
 // Touch controls for iPhone: left = move (floating stick), right = the 开火 aim joystick (kind:'fire') plus buttons.
-// 开火 joystick: press + drag = fire continuously that way; hold without dragging = fire along the current aim line; release = stop.
-// No auto-aim and no auto-fire on touch; free taps on the right half do nothing.
+// 瞄准 joystick: auto-fire always runs in combat (walk direction, soft aim assist); pushing 瞄准 steers it and shows the aim line,
+// lifting the thumb fires a 5-shot burst (slide back to the centre first to cancel). Free taps on the right half do nothing.
 // Sizes are in logical px (960x540); on an iPhone in landscape 1 pt ≈ 1.4 logical px, so r 44 ≈ 62 pt finger target.
 (function (DK) {
   DK.touchMode = (function () {
@@ -87,6 +87,7 @@
           g.lineStyle(3, 0xffffff, 0.6).lineBetween(b.x - k, b.y, b.x - k2, b.y).lineBetween(b.x + k2, b.y, b.x + k, b.y).lineBetween(b.x, b.y - k, b.x, b.y - k2).lineBetween(b.x, b.y + k2, b.x, b.y + k);
           const kp = this.fireKnob(b); // joystick knob: follows the thumb inside the button
           g.fillStyle(0xffffff, on ? 0.6 : 0.28).fillCircle(kp.x, kp.y, b.r * 0.4);
+          if (b.cd != null && b.cd > 0) g.lineStyle(5, 0x9fd3ff, 0.9).beginPath().arc(b.x, b.y, b.r + 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - b.cd), false).strokePath(); // burst recharge
           continue;
         }
         g.fillStyle(on ? 0xf2c14e : 0x000000, on ? 0.55 : 0.36).fillCircle(b.x, b.y, b.r);
@@ -100,10 +101,14 @@
         g.lineStyle(3, 0xffffff, 0.4).strokeCircle(s.ox, s.oy, this.R).fillStyle(0xffffff, 0.08).fillCircle(s.ox, s.oy, this.R);
         g.fillStyle(s.kind === 'aim' ? 0xff6a4a : 0xffffff, 0.55).fillCircle(s.x, s.y, this.KNOB);
       }
+      const hk = 0.5 + 0.5 * Math.sin(Date.now() / 160); // tutorial highlight (this.hl = button id or 'move')
       if (!Object.values(this.ptrs).some(s => s.kind === 'move')) { // hint ghost sticks
         const gx = DK.TOUCH.ghost[0], gy = DK.H - DK.TOUCH.ghost[1];
         g.lineStyle(3, 0xffffff, 0.16).strokeCircle(gx, gy, this.R).fillStyle(0xffffff, 0.12).fillCircle(gx, gy, this.KNOB);
+        if (this.hl === 'move') g.lineStyle(5, 0xffd84a, 0.5 + 0.5 * hk).strokeCircle(gx, gy, this.R + 6 + 6 * hk);
       }
+      const hb = this.hl && this.buttons.find(b => b.id === this.hl && !b.hidden);
+      if (hb) g.lineStyle(5, 0xffd84a, 0.5 + 0.5 * hk).strokeCircle(hb.x, hb.y, hb.r + 12 + 6 * hk);
     }
     destroy() {
       DK.TouchPad.detach(this);
@@ -183,10 +188,11 @@
       if (!this.el || tc !== this.tc) return;
       for (const b of tc.buttons) {
         const d = this.els[b.id]; if (!d) continue;
-        const cls = 'pbtn' + (b.kind === 'fire' ? ' fire' : '') + (tc.down[b.id] ? ' on' : '') + (b.disabled ? ' off' : '') + (b.hidden ? ' hide' : '');
+        const cls = 'pbtn' + (b.kind === 'fire' ? ' fire' : '') + (tc.down[b.id] ? ' on' : '') + (b.disabled ? ' off' : '') + (b.hidden ? ' hide' : '') + (tc.hl === b.id ? ' hl' : '');
         if (this.cache[b.id + 'c'] !== cls) { d.className = cls; this.cache[b.id + 'c'] = cls; }
         if (this.cache[b.id + 'l'] !== b.label) { d.textContent = b.label; this.cache[b.id + 'l'] = b.label; }
-        d.style.opacity = b.cd > 0 ? 0.55 : '';
+        d.style.opacity = b.cd > 0 && b.kind !== 'fire' ? 0.55 : '';
+        if (b.kind === 'fire') d.style.boxShadow = b.cd > 0 ? 'inset 0 0 0 6px rgba(159,211,255,.55)' : '';
       }
       const fb = tc.buttons.find(b => b.kind === 'fire'), fg = fb && this.geom(fb.id), fk = this.fireKnobEl;
       if (fk && fg) { const kp = tc.fireKnob({ x: fg.x / this.s, y: fg.y / this.s, r: fg.r / this.s }), kr = fg.r * 0.4;
@@ -197,9 +203,10 @@
       this.rings.forEach(([r, k], i) => {
         let p = ps[i] && ps[i][1], cx, cy, kx, ky, show = true;
         if (p) { cx = p.ox * s; cy = p.oy * s; kx = p.x * s; ky = p.y * s; k.className = 'knob' + (p.kind === 'aim' ? ' aim' : ''); }
-        else if (ghost) { cx = Math.min(this.w * 0.25, R + 16); cy = this.h - R - 30; kx = cx; ky = cy; ghost = false; k.className = 'knob'; r.style.opacity = 0.5; }
+        else if (ghost) { cx = Math.min(this.w * 0.25, R + 16); cy = this.h - R - 30; kx = cx; ky = cy; ghost = false; k.className = 'knob'; r.style.opacity = tc.hl === 'move' ? 1 : 0.5; }
         else show = false;
         r.style.display = k.style.display = show ? 'block' : 'none'; if (!show) return;
+        const rc = 'ring' + (!p && tc.hl === 'move' ? ' hl' : ''); if (r.className !== rc) r.className = rc;
         if (p) r.style.opacity = 1;
         Object.assign(r.style, { left: (cx - R) + 'px', top: (cy - R) + 'px', width: 2 * R + 'px', height: 2 * R + 'px' });
         Object.assign(k.style, { left: (kx - K) + 'px', top: (ky - K) + 'px', width: 2 * K + 'px', height: 2 * K + 'px' });

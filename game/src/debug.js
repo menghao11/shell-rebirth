@@ -15,7 +15,7 @@
   const dbg = {
     help() {
       const h = {
-        'god(on=true)': '无敌（不扣血）', 'room(n, shop?)': '跳到第 n 个房间 1-5，6=Boss；shop 可选 "merchant"/"rest"', 'jump(n)': '同 room(n)',
+        'god(on=true)': '无敌（不扣血）', 'room(n, shop?)': '跳到第 n 个房间 1-5，6=Boss；shop 可选 "merchant"/"rest"', 'tutorial(mode?)': '进入教学关（first=完成后直接出击）', 'tutNext()': '教学关跳到下一步', 'jump(n)': '同 room(n)',
         'boss()': '直接打 Boss 铁砧', 'skip()': '清掉当前房间所有敌人（含后续波次）', 'wave()': '只清当前波', 'reward()': '立即弹出三选一', 'pick(i)': '选择当前三选一的第 i 张(1-3)',
         'give(id)': '直接获得奖励，id 见 rewards()', 'rewards()': '列出奖励 id', 'giveAll()': '获得全部弹种+机枪+改造', 'weapon("mg"|"pistol")': '获得并切换武器', 'ammo("burn"|"freeze"|"split")': '获得弹种',
         'heal()/hp(n)': '回满 / 设置血量', 'die()': '立即阵亡', 'win()': '立刻击败 Boss（需在 Boss 房）', 'bossHp(n)': '设置 Boss 血量（会触发阶段）', 'bossPhase(n)': '跳到 Boss 阶段 2/3',
@@ -28,6 +28,9 @@
     god(on) { DK.god = on !== false; return 'god ' + DK.god; },
     room(n, shop) { return startRoom((n | 0) - 1, shop); }, jump(n, shop) { return startRoom((n | 0) - 1, shop); },
     boss() { return startRoom(DK.ROOMS.length - 1); },
+    tutorial(mode) { const g = DK.game; DK.tutorialMode = mode || 'replay'; ['Base', 'Result', 'Run'].forEach(k => g.scene.isActive(k) && g.scene.stop(k)); g.scene.start('Run'); return 'tutorial ' + DK.tutorialMode; },
+    tutStep() { const s = inRun(); return s && s.tut ? { i: s.tut.i, id: s.tut.step ? s.tut.step.id : 'done' } : null; },
+    tutNext() { const s = inRun(); if (!s || !s.tut) return 'no tutorial'; s.tut.next(); return s.tut.step ? s.tut.step.id : 'done'; },
     base() { DK.run = null; const g = DK.game; ['Run', 'Result'].forEach(k => g.scene.isActive(k) && g.scene.stop(k)); g.scene.start('Base'); return 'base'; },
     skip() {
       const s = inRun(); if (!s) return 'not in a room';
@@ -66,6 +69,7 @@
       const s = scene(), r = run(), key = s && s.scene ? s.scene.key : null, o = { scene: key, meta: Object.assign({}, DK.meta), god: !!DK.god };
       if (r) Object.assign(o, { room: r.room + 1, roomType: DK.ROOMS[r.room].type, hp: r.hp, maxHp: r.maxHp, weapon: r.weapon, mag: r.mag[r.weapon], ammoTypes: r.ammoTypes.slice(), mods: Object.keys(r.mods), grenades: r.grenades, scrap: r.scrap, kills: r.kills, taken: r.taken.slice() });
       if (key === 'Run') Object.assign(o, { state: s.state, wave: s.wave + 1, enemies: s.enemies.getChildren().filter(e => e.alive).length, pending: s.pending, doorOpen: !!(s.door && s.door.open), modal: !!s.modal, dialogue: s.dlg.active, player: { x: Math.round(s.player.x), y: Math.round(s.player.y) },
+        tutorial: s.tut ? (s.tut.step ? s.tut.step.id : 'done') : null, aim: { precise: s.player.precise, bursts: s.player.bursts, burstCd: +s.player.burstCd.toFixed(2), assisted: s.player.assisted || 0 },
         boss: s.boss ? { hp: Math.round(s.boss.hp), phase: s.boss.phase, active: s.boss.active, alive: s.boss.alive } : null });
       if (key === 'Base') Object.assign(o, { dialogue: s.dlg.active, modal: !!s.modal, player: { x: Math.round(s.player.x), y: Math.round(s.player.y) } });
       return o;

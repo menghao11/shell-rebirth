@@ -71,7 +71,8 @@
       DK.setCircleBody(this.spr, P.radius); this.spr.setCollideWorldBounds(true);
       this.radius = P.radius;
       this.gun = scene.add.image(x, y, 'gun_pistol').setOrigin(0.2, 0.5);
-      this.aimG = DK.touchMode ? scene.add.graphics() : null; // touch: aim-direction indicator on the player
+      this.aimG = scene.add.graphics(); // aim guide: short facing stub (touch) / dotted precision line while aiming a burst
+      this.precise = false; this.preciseAng = 0; this.burstQ = 0; this.burstT = 0; this.burstCd = 0; this.burstAng = 0; this.bursts = 0; this.dashes = 0;
       this.aimAng = 0; this.dashT = 0; this.dashDir = { x: 1, y: 0 }; this.dashCdT = 0; this.iframes = 0; this.fireCd = 0;
       this.reloadT = 0; this.empowered = false; this.shots = 0; this.firingFor = 0; this.idleFire = 0;
       this.charges = this.run ? this.run.dashCharges : P.dashCharges;
@@ -141,20 +142,29 @@
       this.spr.setDepth(this.feetY()); this.gun.setDepth(this.feetY() + 1);
       this.hurtT -= dt; this.throwT -= dt; this.shootT -= dt;
       if (this.dead) { spr.setVelocity(0); this.animate(false); return; }
-      if (this.paused() || (s.inputBlockUntil && s.time.now < s.inputBlockUntil)) { spr.setVelocity(0); this.drain(); this.grenadeAim = false; this.animate(false); return; }
+      if (this.paused() || (s.inputBlockUntil && s.time.now < s.inputBlockUntil)) { spr.setVelocity(0); this.drain(); this.grenadeAim = false; this.precise = false; this.animate(false); if (this.aimG) this.aimG.clear(); return; }
       const k = this.keys, tc = this.scene.touch, mouse = s.input.mousePointer;
       const { mx, my } = this.input();
       if (mx || my) { const l = Math.hypot(mx, my); this.moveDir = { x: mx / l, y: my / l }; }
-      // ---- aim
-      // always firing during combat (user request): infinite ammo, no reload, no hold-to-fire, no auto-aim at enemies
+      // ---- aim (user-approved scheme)
+      // default: always firing in combat, along the 瞄准 stick while it is pushed, otherwise along the walk/facing direction
+      // (desktop: the mouse), with soft aim assist (bullets bend toward an enemy within PLAYER.assistDeg). No lock-on.
+      // precision: dragging 瞄准 (desktop: holding the left button) shows the dotted aim line; releasing fires a 5-shot burst.
       let wantFire = s.state === 'fight' || s.state === 'boss';
+      let precise = false, released = false;
       if (DK.touchMode && tc) {
-        // 瞄准 joystick only steers: keep the last aimed direction; before the first aim, shoot where you face/walk
-        if (tc.fireHeld && tc.fireAim.active) { this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x); this.aimedOnce = true; }
-        else if (!this.aimedOnce && (mx || my)) this.aimAng = Math.atan2(my, mx);
+        if (tc.fireHeld && tc.fireAim.active) { this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x); precise = true; this.aimedOnce = true; }
+        else if (mx || my) this.aimAng = Math.atan2(my, mx);
+        released = this.precise && !tc.fireHeld; // lifted the thumb while aiming (sliding back to the centre first = cancel)
       } else if (mouse) {
         this.aimAng = Math.atan2(mouse.y / DK.R - this.y, mouse.x / DK.R - this.x);
+        precise = !!(mouse.leftButtonDown && mouse.leftButtonDown()) && !(s.uiLock && s.uiLock());
+        released = this.precise && !precise;
       }
+      if (precise) this.preciseAng = this.aimAng;
+      if (released && wantFire && this.canFight && this.run && this.burstCd <= 0 && this.burstQ <= 0) this.startBurst(this.preciseAng);
+      this.precise = precise;
+      if (this.burstQ > 0) this.aimAng = this.burstAng;
       if (DK.autoFire) { const t = this.nearestEnemy(900); if (t) { this.aimAng = Math.atan2(t.y - this.y, t.x - this.x); wantFire = true; } } // debug/test helper
       // ---- dash
       this.dashCdT -= dt;
@@ -162,7 +172,7 @@
       const dashPressed = (k && (Phaser.Input.Keyboard.JustDown(k.SPACE) || Phaser.Input.Keyboard.JustDown(k.SHIFT))) || (tc && tc.consume && tc.consume('dash'));
       if (dashPressed && this.dashT <= 0 && this.charges > 0) {
         this.charges--; if (this.dashCdT <= 0) this.dashCdT = P.dashCd;
-        this.dashT = P.dashTime; this.dashDir = (mx || my) ? { x: this.moveDir.x, y: this.moveDir.y } : { x: Math.cos(this.aimAng), y: Math.sin(this.aimAng) };
+        this.dashT = P.dashTime; this.dashes++; this.dashDir = (mx || my) ? { x: this.moveDir.x, y: this.moveDir.y } : { x: Math.cos(this.aimAng), y: Math.sin(this.aimAng) };
         DK.sfx(s, 'dash');
       }
       if (this.dashT > 0) {
@@ -176,7 +186,7 @@
       spr.setAlpha(this.iframes > 0 && !this.dashT && Math.floor(s.time.now / 70) % 2 ? 0.5 : 1);
       this.gun.setPosition(spr.x + Math.cos(this.aimAng) * 6, spr.y + 6 + Math.sin(this.aimAng) * 6).setRotation(this.aimAng).setFlipY(left);
       this.animate(!!(mx || my));
-      if (this.aimG) this.drawAim(wantFire);
+      if (this.aimG) this.drawAim(wantFire, precise);
       if (!this.canFight || !this.run) return;
       // ---- weapon
       const r = this.run, w = this.weapon();
@@ -185,12 +195,33 @@
       this.fireCd -= dt;
       if (!wantFire) this.fireCd = Math.max(this.fireCd, 0); // no banked shots while idle
       if (wantFire) { this.firingFor += dt; this.idleFire = 0; } else { this.idleFire += dt; if (this.idleFire > 0.3) this.firingFor = 0; }
-      if (wantFire && this.fireCd <= 0) this.fire(w);
+      this.burstCd -= dt;
+      if (this.burstQ > 0) { // burst replaces the normal auto-fire while it plays
+        this.burstT -= dt; this.fireCd = Math.max(this.fireCd, 0);
+        while (this.burstT <= 0 && this.burstQ > 0) { this.fire(w, { burst: true, ang: this.burstAng }); this.burstQ--; this.burstT += DK.PLAYER.burst.gap; }
+      } else if (wantFire && this.fireCd <= 0) this.fire(w);
       if (r.mods.ring && wantFire) { this.ringT = (this.ringT == null ? 4 : this.ringT) - dt; if (this.ringT <= 0) { this.ringT = 4; this.ringBurst(); } }
       // ---- grenade (hold to preview, release to throw)
       const qDown = (k && k.Q.isDown) || (tc && tc.down.grenade);
       if (qDown && r.grenades > 0) this.grenadeAim = true;
       else if (this.grenadeAim) { this.grenadeAim = false; if (r.grenades > 0) { r.grenades--; this.throwGrenadeTimed(); } }
+    }
+    startBurst(ang) {
+      const B = DK.PLAYER.burst; this.burstQ = B.n; this.burstT = 0; this.burstAng = ang; this.burstCd = B.cd; this.bursts++;
+      DK.sfx(this.scene, 'dash', { volume: 0.25, minGap: 0 });
+    }
+    // soft aim assist: the enemy closest to the shot line within assistDeg (+ a little for its size) and in reach, or null
+    assistTarget(base, w) {
+      const s = this.scene, P = DK.PLAYER, list = s.targets ? s.targets() : [], reach = Math.min(DK.W, (w.speed || 760) * 1.05), cone = Phaser.Math.DegToRad(P.assistDeg);
+      let best = null, bs = 1e9;
+      for (const e of list) {
+        if (e.isBoss && e.bossRef && e.bossRef.invulnT > 0) continue;
+        const dx = e.x - this.x, dy = e.y - this.y, d = Math.hypot(dx, dy); if (d > reach || d < 1) continue;
+        const r = e.isBoss ? (e.body ? e.body.width / 2 : 50) : (e.radius || 14), ang = Math.atan2(dy, dx), diff = Math.abs(DK.angDiff(ang, base));
+        if (diff > cone + Math.atan2(r, d) * 0.5) continue;
+        const sc = diff + d / 2500; if (sc < bs) { bs = sc; best = { obj: e, ang }; }
+      }
+      return best;
     }
     selectWeapon(i) { const r = this.run; if (r.weapons[i] && r.weapon !== r.weapons[i]) { r.weapon = r.weapons[i]; this.reloadT = 0; this.updateGun(); } }
     grenadeTarget() {
@@ -202,20 +233,26 @@
       if (d > G.range) { dx *= G.range / d; dy *= G.range / d; }
       return { x: Phaser.Math.Clamp(this.x + dx, 40, DK.W - 40), y: Phaser.Math.Clamp(this.y + dy, 40, DK.H - 40) };
     }
-    fire(w) {
-      const s = this.scene, r = this.run;
+    fire(w, o) {
+      o = o || {};
+      const s = this.scene, r = this.run, base = o.ang != null ? o.ang : this.aimAng;
       this.shots++; this.shootT = w.id === 'mg' ? 0.15 : 0.3;
       if (w.id !== 'mg' && this.spr.realSkin && this.dashT <= 0 && this.reloadT <= 0) DK.anim(this.spr, 'shoot', { restart: true, startFrame: 1 }); // hero_shoot fires on 01
-      this.fireCd = Math.max(this.fireCd, -1 / w.rate) + 1 / w.rate; // accumulate so 4/s and 10/s are exact (review P1-2)
+      if (!o.burst) this.fireCd = Math.max(this.fireCd, -1 / w.rate) + 1 / w.rate; // accumulate so 4/s and 10/s are exact (review P1-2)
       let dmg = w.dmg, crit = Math.random() < w.crit || (r.mods.fifth && this.shots % 5 === 0);
       if (crit) dmg *= DK.PLAYER.critMul;
       const powered = false; // (the reload-empowered shot went away with reloading)
-      const a = this.aimAng + Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-w.spread, w.spread));
-      const reach = this.spr.realSkin ? 26 : 28, mx = this.x + Math.cos(this.aimAng) * reach, my = this.y + (this.spr.realSkin ? -2 : 6) + Math.sin(this.aimAng) * reach;
-      s.fireBullet(mx, my, a, { dmg, crit, powered, speed: w.speed, procMul: w.procMul, src: w.id, size: w.bullet });
+      let a = base, home = null;
+      if (!o.burst) { // auto-fire: weapon spread, then soft assist (start half-way toward the target and bend in flight)
+        a += Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-w.spread, w.spread));
+        const t = DK.PLAYER.assistDeg > 0 && this.assistTarget(base, w);
+        if (t) { home = t.obj; a = base + DK.angDiff(t.ang, base) * 0.5 + Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-w.spread, w.spread)) * 0.3; this.assisted = (this.assisted || 0) + 1; }
+      }
+      const reach = this.spr.realSkin ? 26 : 28, mx = this.x + Math.cos(base) * reach, my = this.y + (this.spr.realSkin ? -2 : 6) + Math.sin(base) * reach;
+      s.fireBullet(mx, my, a, { dmg, crit, powered, speed: w.speed, procMul: w.procMul, src: w.id, size: w.bullet, home, burst: !!o.burst });
       DK.sfx(s, powered ? 'shoot_pistol_power' : w.sfx, { minGap: 40 });
-      s.muzzleFlash(mx, my, this.aimAng, powered);
-      s.ejectCasing(this.x, this.y, this.aimAng);
+      s.muzzleFlash(mx, my, base, powered);
+      s.ejectCasing(this.x, this.y, base);
       s.cameras.main.shake(50, (powered ? 0.004 : w.id === 'mg' ? 0.0015 : 0.0025));
     }
     ghost() {
@@ -240,17 +277,24 @@
       if (hit.etype === 'heavy' && Math.abs(DK.angDiff(this.aimAng + Math.PI, hit.facing)) < Phaser.Math.DegToRad(hit.cfg.shieldArc)) return null;
       return hit;
     }
-    drawAim(firing) { // grenade-style aim guide: row of bright dots (dark outline) shrinking/fading to a target ring; light red on a damageable target, gold while firing
+    drawAim(firing, precise) { // precision (dragging 瞄准 / holding the mouse): grenade-style dotted line, light red on a damageable target, blue-grey while the burst recharges; otherwise a short facing stub (touch)
       const g = this.aimG; g.clear(); if (this.dead || !this.canFight) return;
       this.aimHot = !!this.aimTarget();
-      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, col = this.aimHot ? (firing ? 0xff8a78 : 0xff9e9e) : firing ? 0xffd040 : 0xffffff, L = 250, n = 11;
+      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2;
       g.setDepth(this.spr.depth + 2);
+      if (!precise) {
+        if (!DK.touchMode) return;
+        for (let i = 0; i < 3; i++) { const d = 30 + i * 16, x = ox + c * d, y = oy + sn * d, r = 4 - i * 0.8; g.fillStyle(0x101418, 0.45).fillCircle(x, y, r + 1.5); g.fillStyle(this.aimHot ? 0xff9e9e : 0xffffff, 0.55 - i * 0.12).fillCircle(x, y, r); }
+        return;
+      }
+      const cd = this.burstCd > 0, col = cd ? 0x9fb4c8 : this.aimHot ? (firing ? 0xff8a78 : 0xff9e9e) : firing ? 0xffd040 : 0xffffff, L = 250, n = 11;
       for (let i = 0; i < n; i++) {
         const k = i / (n - 1), d = 32 + k * (L - 52), x = ox + c * d, y = oy + sn * d, r = 5.5 - k * 3, a = 1 - k * 0.55;
         g.fillStyle(0x101418, a * 0.8).fillCircle(x, y, r + 2); g.fillStyle(col, a).fillCircle(x, y, r);
       }
       const tx = ox + c * L, ty = oy + sn * L;
       g.lineStyle(6, 0x101418, 0.7).strokeCircle(tx, ty, 12); g.lineStyle(3, col, 0.9).strokeCircle(tx, ty, 12);
+      if (cd) g.lineStyle(3, 0xffffff, 0.9).beginPath().arc(tx, ty, 17, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - this.burstCd / DK.PLAYER.burst.cd)).strokePath();
       g.fillStyle(0x101418, 0.7).fillCircle(tx, ty, 3.5); g.fillStyle(col, 0.95).fillCircle(tx, ty, 2);
     }
     destroy() { this.spr.destroy(); this.gun.destroy(); this.aimG && this.aimG.destroy(); }

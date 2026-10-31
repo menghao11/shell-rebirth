@@ -67,7 +67,7 @@
       this.prompt = DK.txt(this, 0, 0, '', { fontSize: '14px', color: '#fff', backgroundColor: '#000000aa', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(960).setVisible(false);
       if (DK.touchMode) DK.button(this, W - 62, 32, 100, 46, '设置', () => this.openSettings(), { fontSize: 18, depth: 1000 });
       else DK.button(this, W - 52, 24, 76, 32, '设置', () => this.openSettings(), { fontSize: 14, depth: 1000 });
-      if (!DK.touchMode) DK.txt(this, W / 2, H - 22, 'WASD 移动 · E 交谈 · ' + (this.painted ? '走到右下车库门出击' : '走进右侧大门出击') + ' · 战斗中：鼠标瞄准（自动射击） / 空格冲刺 / 按住Q 手雷', { fontSize: '13px', color: '#bbb', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(950);
+      if (!DK.touchMode) DK.txt(this, W / 2, H - 22, 'WASD 移动 · E 交谈 · ' + (this.painted ? '走到右下车库门出击' : '走进右侧大门出击') + ' · 战斗中：自动射击（鼠标定方向） / 按住左键瞄准、松开连发 / 空格冲刺 / 按住Q 手雷', { fontSize: '13px', color: '#bbb', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(950);
       if (DK.touchMode) {
         this.touch = new DK.TouchControls(this, [{ id: 'act', label: '交谈', x: W - 120, y: H - 120, r: 64, hidden: true }]);
         this.touch.on('press', id => { if (id === 'act') this.interact(); });
@@ -142,12 +142,19 @@
       objs.push(DK.txt(this, W / 2, 120, '设置', { fontSize: '34px', fontStyle: 'bold', color: '#f2c14e' }).setOrigin(0.5).setDepth(1101));
       objs.push(...DK.volumeControls(this, W / 2, 210, 1102));
       objs.push(DK.button(this, W / 2, 340, 220, 44, '重看开场剧情', () => { close(); this.dlg.show(DK.lines(DK.story.intro)); }, { depth: 1102, fontSize: 16 }));
-      objs.push(DK.button(this, W / 2, 400, 220, 44, '关闭', () => close(), { depth: 1102 }));
+      objs.push(DK.button(this, W / 2, 396, 220, 44, '重玩教学关', () => { close(); this.startTutorial('replay'); }, { depth: 1102, fontSize: 16 }));
+      objs.push(DK.button(this, W / 2, 456, 220, 44, '关闭', () => close(), { depth: 1102 }));
       const close = () => { objs.forEach(o => o.destroy()); this.modal = null; };
       this.modal = { close };
     }
+    startTutorial(mode) { // 教学关 (tutorial.js) runs inside the Run scene
+      if (this.leaving) return; this.leaving = true; DK.tutorialMode = mode;
+      this.cameras.main.fadeOut(250, 0, 0, 0); this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Run'));
+    }
     sortie() {
-      if (this.leaving) return; this.leaving = true;
+      if (this.leaving) return;
+      if (!DK.tutorialDone()) return this.startTutorial('first'); // first sortie: the skippable 教学关, then straight into room 1
+      this.leaving = true;
       const line = DK.npcLine('laoqiang', 'sortie');
       const go = () => { DK.run = DK.newRun(); this.cameras.main.fadeOut(250, 0, 0, 0); this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Run')); };
       if (line) { DK.speech(this, line, 1400); this.time.delayedCall(900, go); } else go();
