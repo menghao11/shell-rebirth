@@ -5,13 +5,17 @@
 
   DK.RunScene = class extends Phaser.Scene {
     constructor() { super('Run'); }
-    init() { if (!DK.run) DK.run = DK.newRun(); this.run = DK.run; }
+    init() {
+      this.tutorial = DK.tutorialMode || null; DK.tutorialMode = null; // 'first' (first sortie) / 'replay' (from 设置): the 教学关, with its own throw-away run
+      if (this.tutorial) { this.run = DK.newRun(); this.run.grenades = 3; this.run.shopType = 'rest'; return; }
+      if (!DK.run) DK.run = DK.newRun(); this.run = DK.run;
+    }
     create() {
       // Phaser reuses the Scene instance on restart()/start(): reset ALL per-visit state here (review P0-1)
       Object.assign(this, { leaving: false, rewardOpen: false, restUsed: false, merchantTalked: false, sold: {}, hostage: null, hostageFreed: false,
-        merchantSpr: null, _waveWait: false, sparkCount: 0, bossStart: 0, pauseUI: null, touch: null, modal: null, pausedFlag: false, _immuneT: 0, gameT: 0 });
+        merchantSpr: null, _waveWait: false, sparkCount: 0, bossStart: 0, pauseUI: null, touch: null, modal: null, pausedFlag: false, _immuneT: 0, gameT: 0, tut: null });
       DK.setupCamera(this);
-      const run = this.run, room = DK.ROOMS[run.room], W = DK.W, H = DK.H;
+      const run = this.run, room = this.tutorial ? { type: 'tutorial', name: '教学关' } : DK.ROOMS[run.room], W = DK.W, H = DK.H;
       this.room = room; this.state = 'start'; this.wave = -1; this.pending = 0; this.dlg = new DK.Dialogue(this);
       this.modal = null; this.pausedFlag = false; this.boss = null; this.interactables = [];
       this.cameras.main.fadeIn(250, 0, 0, 0);
@@ -52,13 +56,14 @@
       this.setupControls();
       this.createHUD();
       // room start
-      const label = room.type === 'boss' ? 'BOSS · 铁砧' : `房间 ${run.room + 1}/5 · ${room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : room.name}`;
+      const label = this.tutorial ? '教学关' : room.type === 'boss' ? 'BOSS · 铁砧' : `房间 ${run.room + 1}/5 · ${room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : room.name}`;
       DK.banner(this, label, { size: 30, color: room.type === 'boss' ? '#ff5a4e' : '#f2c14e', dur: 1400 });
       DK.music(this, room.type === 'boss' ? 'bgm_boss' : 'bgm_stage1');
       if (room.type === 'combat' || room.type === 'hostage') { this.door.setOpen(false); this.time.delayedCall(900, () => this.nextWave()); this.state = 'fight'; }
       else if (room.type === 'shop') { this.door.setOpen(true); this.setupShop(); this.state = 'open'; }
       else if (room.type === 'boss') this.startBoss();
-      this.events.once('shutdown', () => { this.dlg.close(true); });
+      else if (this.tutorial) { this.state = 'fight'; this.tut = new DK.Tutorial(this, this.tutorial); }
+      this.events.once('shutdown', () => { this.dlg.close(true); if (this.tut) { this.tut.destroy(); this.tut = null; } });
       DK.current = this;
     }
 
@@ -166,8 +171,9 @@
       objs.push(DK.txt(this, W / 2, 120, '暂停', { fontSize: '40px', fontStyle: 'bold', color: '#f2c14e' }).setOrigin(0.5).setDepth(1101));
       objs.push(DK.button(this, W / 2, 210, 240, 50, '继续', () => this.togglePause(), { depth: 1102 }));
       objs.push(...DK.volumeControls(this, W / 2, 290, 1102));
-      objs.push(DK.button(this, W / 2, 420, 240, 46, '放弃本轮（计为阵亡）', () => { this.togglePause(); this.playerDie('abandon'); }, { depth: 1102, fontSize: 16, stroke: 0xe74c3c }));
-      if (!DK.touchMode) objs.push(DK.txt(this, W / 2, 490, 'WASD 移动 · 鼠标瞄准（自动射击） · 空格 冲刺 · 按住Q 手雷 · 1/2/滚轮 切枪 · E 互动', { fontSize: '13px', color: '#aaa' }).setOrigin(0.5).setDepth(1101));
+      if (this.tut) objs.push(DK.button(this, W / 2, 420, 240, 46, '跳过教学', () => { this.togglePause(); this.tut && this.tut.finish(true); }, { depth: 1102, fontSize: 16 }));
+      else objs.push(DK.button(this, W / 2, 420, 240, 46, '放弃本轮（计为阵亡）', () => { this.togglePause(); this.playerDie('abandon'); }, { depth: 1102, fontSize: 16, stroke: 0xe74c3c }));
+      if (!DK.touchMode) objs.push(DK.txt(this, W / 2, 490, 'WASD 移动 · 自动射击（鼠标定方向，子弹轻微吸附） · 按住左键瞄准、松开连发 · 空格 冲刺 · 按住Q 手雷 · 1/2/滚轮 切枪 · E 互动', { fontSize: '13px', color: '#aaa' }).setOrigin(0.5).setDepth(1101));
       this.pauseUI = objs; this.modal = 'pause';
     }
 
@@ -247,7 +253,7 @@
       const tint = o.powered ? 0xff8a4a : o.crit ? 0xffb0ff : (!real && o.frag) ? 0xfff07a : null;
       if (tint) b.setTint(tint);
       const sp = o.speed || 700; b.setVelocity(Math.cos(ang) * sp, Math.sin(ang) * sp);
-      Object.assign(b, { dmg: o.dmg, crit: !!o.crit, frag: !!o.frag, ignore: o.ignore || null, procMul: o.procMul || 1, src: o.src || 'gun', born: this.time.now, life: o.life || 1100 });
+      Object.assign(b, { home: o.home || null, homeT: o.home ? DK.PLAYER.assistTime : 0, burst: !!o.burst, dmg: o.dmg, crit: !!o.crit, frag: !!o.frag, ignore: o.ignore || null, procMul: o.procMul || 1, src: o.src || 'gun', born: this.time.now, life: o.life || 1100 });
       return b;
     }
     killBullet(b) { if (b.active) { b.disableBody(true, true); } }
@@ -290,7 +296,7 @@
       }
       const dmg = b.dmg, run = this.run;
       this.killBullet(b);
-      this.damage(e, dmg, { src: b.src + (b.frag ? '_frag' : ''), crit: b.crit, x: b.x, y: b.y });
+      this.damage(e, dmg, { src: b.src + (b.frag ? '_frag' : ''), crit: b.crit, x: b.x, y: b.y, burst: b.burst });
       DK.sfx(this, 'enemy_hit', { minGap: 45 });
       // ammo procs
       const target = isBoss ? e.bossRef : e;
@@ -345,10 +351,11 @@
         return;
       }
       if (!spr.alive) return;
+      if (spr.only && !(spr.only === 'burst' ? info.burst : spr.only === 'grenade' ? info.src === 'grenade' : false)) { if (this.tut) this.tut.wrongHit(spr); return; } // tutorial targets that only a burst / grenade can drop
       spr.hp -= amt; if (!info.noFlash) { spr.flashT = 0.06; spr.hurtT = 0.16; }
       DK.logDamage({ src: info.src, tgt: spr.etype, amt, crit: !!info.crit, hp: Math.max(0, Math.round(spr.hp * 10) / 10) });
       this.dmgNumber(info.x || spr.x, info.y || spr.y - 20, amt, info);
-      if (spr.hp <= 0) this.killEnemy(spr, info.src);
+      if (spr.hp <= 0) { if (this.tut) this.tut.onKill(spr, info); this.killEnemy(spr, info.src); }
     }
     dmgNumber(x, y, amt, info) {
       const big = info.crit; const v = amt % 1 ? amt.toFixed(1) : amt;
@@ -374,7 +381,7 @@
     }
     hurtPlayer(amt, src) {
       const p = this.player;
-      if (this.state === 'dead' || this.state === 'won' || this.isPaused()) return false;
+      if (this.state === 'dead' || this.state === 'won' || this.isPaused() || this.tutorial) return false; // 教学关: nothing hurts
       if (p.invulnerable()) { if (DK.god && !p.dead) DK.logDamage({ src, tgt: 'player', amt: 0, note: 'god', hp: this.run.hp }); return false; }
       const run = this.run; run.hp = Math.max(0, run.hp - amt);
       p.iframes = DK.PLAYER.hurtIframes;
@@ -691,8 +698,8 @@
       if (p.charges < run.dashCharges && p.dashCdT > 0) g.lineStyle(2, 0x7ee07a, 0.8).beginPath().arc(p.x, p.y, 24, -Math.PI / 2, -Math.PI / 2 + PI2 * (1 - p.dashCdT / DK.PLAYER.dashCd)).strokePath();
       // room progress
       const total = DK.ROOMS.length;
-      h.room.setText(this.room.type === 'boss' ? 'BOSS 铁砧' : `房间 ${run.room + 1}/5  ${this.room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : this.room.name}${this.state === 'fight' ? '  · 敌人 ' + (this.targets().length + this.pending) : ''}`);
-      for (let i = 0; i < total; i++) { const x = DK.W / 2 - (total - 1) * 11 + i * 22; g.fillStyle(i < run.room ? 0x7ee07a : i === run.room ? 0xf2c14e : 0x444444).fillCircle(x, 40, i === total - 1 ? 6 : 4); }
+      if (this.tutorial) h.room.setText('教学关'); else h.room.setText(this.room.type === 'boss' ? 'BOSS 铁砧' : `房间 ${run.room + 1}/5  ${this.room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : this.room.name}${this.state === 'fight' ? '  · 敌人 ' + (this.targets().length + this.pending) : ''}`);
+      if (!this.tutorial) for (let i = 0; i < total; i++) { const x = DK.W / 2 - (total - 1) * 11 + i * 22; g.fillStyle(i < run.room ? 0x7ee07a : i === run.room ? 0xf2c14e : 0x444444).fillCircle(x, 40, i === total - 1 ? 6 : 4); }
       h.scrap.setText(`废铁 ${run.scrap}   击杀 ${run.kills}`);
       // boss bar
       if (this.boss && this.boss.active && this.boss.alive) {
@@ -709,6 +716,7 @@
         const act = this.touch.buttons.find(b => b.id === 'act'); act.hidden = !it; if (it) act.label = it.label;
         this.touch.buttons.find(b => b.id === 'grenade').label = '手雷' + run.grenades;
         this.touch.buttons.find(b => b.id === 'swap').hidden = run.weapons.length < 2;
+        const fb = this.touch.buttons.find(b => b.id === 'fire'); fb.cd = p.burstCd > 0 ? p.burstCd / DK.PLAYER.burst.cd : 0;
         const dash = this.touch.buttons.find(b => b.id === 'dash'); dash.cd = p.charges > 0 ? 0 : Math.max(0, p.dashCdT / DK.PLAYER.dashCd);
         this.touch.draw();
       }
@@ -728,6 +736,14 @@
         if (this.boss) this.boss.update(dt);
         // bullet lifetimes
         const now = this.time.now;
+        this.pBullets.getChildren().forEach(b => { // soft aim assist: bend toward the target for a short while, give up once it is behind
+          if (!b.active || !b.home || b.homeT <= 0) return; b.homeT -= dt; const t = b.home;
+          if (!t.active || (t.isBoss ? !(t.bossRef && t.bossRef.alive) : !t.alive)) { b.home = null; return; }
+          const v = b.body.velocity, sp = Math.hypot(v.x, v.y), cur = Math.atan2(v.y, v.x), d = DK.angDiff(Math.atan2(t.y - b.y, t.x - b.x), cur);
+          if (Math.abs(d) > 1.2) { b.home = null; return; }
+          const na = cur + Phaser.Math.Clamp(d, -DK.PLAYER.assistTurn * dt, DK.PLAYER.assistTurn * dt); b.setVelocity(Math.cos(na) * sp, Math.sin(na) * sp); b.setRotation(na);
+        });
+        if (this.tut) this.tut.update(dt);
         this.pBullets.getChildren().forEach(b => { if (b.active && (now - b.born > b.life || b.x < -20 || b.x > DK.W + 20 || b.y < -20 || b.y > DK.H + 20)) this.killBullet(b); });
         this.eBullets.getChildren().forEach(b => { if (b.active && (now - b.born > 6000 || b.x < -30 || b.x > DK.W + 30 || b.y < -30 || b.y > DK.H + 30)) b.disableBody(true, true); });
         // mines
@@ -746,6 +762,7 @@
       // fx layer
       DK.drawEnemyFx(this, g);
       if (this.boss) this.boss.drawFx(g);
+      if (this.tut) this.tut.draw(g);
       this.mines.forEach(m => { if (m.active && m.armT <= 0) g.lineStyle(1, 0xff3030, 0.35).strokeCircle(m.x, m.y, 34); });
       if (this.state === 'hostage' && this.hostage) g.lineStyle(2, 0x7ee07a, 0.5 + 0.4 * Math.sin(this.time.now / 150)).strokeCircle(this.hostage.x, this.hostage.y, 30);
       const p = this.player;

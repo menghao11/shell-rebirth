@@ -32,6 +32,11 @@
 
   DK.updateEnemy = function (scene, e, dt) {
     const p = scene.player, c = e.cfg, st = e.st;
+    if (e.dummy) { // tutorial target: stands (or drifts) and never attacks
+      if (e.flashT > 0) { e.flashT -= dt; e.setTintFill(0xffffff); } else if (e.only) e.setTint(e.only === 'burst' ? 0x9fd3ff : 0xffc08a); else e.clearTint();
+      e.setVelocity(e.dvx || 0, e.dvy || 0); e.setDepth(e.y + (e.skin ? e.skin.lift : e.radius)); e.setFlipX(p.x < e.x);
+      if (e.realSkin) DK.anim(e, 'move'); return;
+    }
     const dx = p.x - e.x, dy = p.y - e.y, dist = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
     // ---- status
     if (st.burnT > 0) {
