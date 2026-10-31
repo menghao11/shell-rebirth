@@ -18,7 +18,7 @@ window.DK = window.DK || {};
   DK.PLAYER = {
     hp: 100, speed: 215, radius: 13,
     dashSpeed: 640, dashTime: 0.17, dashCd: 0.75, dashCharges: 1, dashGrace: 0.07, // 70 ms i-frame grace after a dash (review P2-9)
-    hurtIframes: 0.6, grenades: 3,
+    hurtIframes: 0.6, grenades: 10,
     passiveMul: 1.5,               // 马克被动：换弹后下一发 +50%
     critMul: 2.0
   };
