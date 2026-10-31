@@ -208,11 +208,11 @@
     spawnWithTelegraph(type, x, y) {
       const r = DK.ENEMIES[type].radius + 4;
       ({ x, y } = x == null || !this.spawnOk(x, y, r) ? this.findSpawn(r, x, y) : { x, y });
-      this.pending++;
+      this.pending++; const gen = this.spawnGen || 0;
       const ring = this.add.circle(x, y, 22, 0xff3030, 0.25).setStrokeStyle(2, 0xff3030).setDepth(5);
       this.tweens.add({ targets: ring, scale: 0.4, alpha: 0.9, duration: 650, onComplete: () => {
         ring.destroy(); this.pending--;
-        if (this.state === 'dead' || this.state === 'won') return;
+        if (this.state === 'dead' || this.state === 'won' || (this.spawnGen || 0) !== gen) return;
         if (!this.spawnOk(x, y, r)) ({ x, y } = this.findSpawn(r, x, y)); // re-check: the boss may have moved onto the ring
         DK.spawnEnemy(this, type, x, y);
       } });
@@ -722,9 +722,9 @@
       const paused = this.isPaused();
       this.player.update(paused ? 0 : dt);
       const g = this.fxG; g.clear();
+      this.containEnemies(); // also while paused/dialogue
       if (!paused) {
         this.enemies.getChildren().slice().forEach(e => e.alive && DK.updateEnemy(this, e, dt));
-        this.containEnemies();
         if (this.boss) this.boss.update(dt);
         // bullet lifetimes
         const now = this.time.now;

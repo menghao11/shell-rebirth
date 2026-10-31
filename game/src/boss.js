@@ -31,6 +31,7 @@
       if (n === 3) {
         this.spr.setVelocity(0);
         // phase 3 is the bullet-hell duel: leftover phase-2 minions and mines fizzle out (review P2-4)
+        s.spawnGen = (s.spawnGen || 0) + 1; // cancel minion telegraphs still on the ground
         s.enemies.getChildren().slice().forEach(e => { if (e.alive) { s.explode(e.x, e.y, 30, 0, { src: 'fx', visualOnly: true }); s.killEnemy(e, 'phase3'); } });
         if (s.mines) { s.mines.slice().forEach(m => { if (m.active) { s.spark && s.spark(m.x, m.y, 0xffe08a); m.destroy(); } }); s.mines.length = 0; }
       }
@@ -131,6 +132,7 @@
         if (this.t.minion <= 0) {
           this.t.minion = 7; this.doAct('deploy', 0.75);
           this.onActFrame('deploy', 2, () => {
+            if (this.phase !== 2 || !this.alive) return; // deploy frame landed after the switch to phase 3
             const alive = s.enemies.getChildren().filter(e => e.alive).length;
             for (let i = 0; i < Math.min(2, B.minionMax - alive); i++) s.spawnWithTelegraph(Math.random() < 0.6 ? 'charger' : 'rifle', Phaser.Math.Clamp(this.spr.x + (i ? 110 : -110), 80, DK.W - 80), Phaser.Math.Clamp(this.spr.y + 90, 80, DK.H - 80));
           });
