@@ -118,7 +118,7 @@
   DK.TouchPad = {
     el: null, tc: null, w: 0, h: 0, s: 0.62, els: {}, rings: [], cache: {},
     // [offset from right, offset from bottom, radius] in landscape logical units (same arc as run.js); act sits top-centre
-    POS: { fire: [120, 130, 82], dash: [285, 86, 60], grenade: [262, 232, 50], reload: [110, 300, 44], swap: [228, 362, 40] },
+    POS: { fire: [120, 130, 82], dash: [285, 86, 60], grenade: [262, 232, 50], swap: [228, 362, 40] },
     init() {
       if (this.el || !DK.touchMode) return;
       this.el = document.getElementById('pad'); if (!this.el) return;
