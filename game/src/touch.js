@@ -1,5 +1,6 @@
-// Twin-stick touch controls for iPhone: left = move (floating stick), right = aim + auto-fire, plus buttons.
-// A button with kind:'fire' is a hold-to-fire button: hold = fire (auto-aim at the nearest enemy), drag off its centre = aim by hand.
+// Touch controls for iPhone: left = move (floating stick), right = the 开火 aim joystick (kind:'fire') plus buttons.
+// 开火 joystick: press + drag = fire continuously that way; hold without dragging = fire along the current aim line; release = stop.
+// No auto-aim and no auto-fire on touch; free taps on the right half do nothing.
 // Sizes are in logical px (960x540); on an iPhone in landscape 1 pt ≈ 1.4 logical px, so r 44 ≈ 62 pt finger target.
 (function (DK) {
   DK.touchMode = (function () {
@@ -36,7 +37,6 @@
         if ((x - b.x) ** 2 + (y - b.y) ** 2 <= (b.r + DK.TOUCH.hitPad) ** 2) { this.ptrs[p.id] = b.kind === 'fire' ? { kind: 'fire', id: b.id, ox: b.x, oy: b.y, x, y, r: b.r } : { kind: 'btn', id: b.id }; this.down[b.id] = true; this.queue[b.id] = true; this.emit('press', b.id); this.update(); return; }
       }
       if (x < DK.W * 0.45) this.ptrs[p.id] = { kind: 'move', ox: x, oy: y, x, y };
-      else this.ptrs[p.id] = { kind: 'aim', ox: x, oy: y, x, y };
     }
     handleMove(p) {
       const s = this.ptrs[p.id]; if (!s || s.kind === 'btn') return;
@@ -66,6 +66,11 @@
         else if (d > 10) { this.aim.x = dx / d; this.aim.y = dy / d; this.aim.mag = m; this.aim.active = d > DK.TOUCH.aimDead; }
       }
     }
+    // knob centre for the 开火 joystick (logical px), clamped to 60% of its radius
+    fireKnob(b) {
+      const s = Object.values(this.ptrs).find(q => q.kind === 'fire'); if (!s || !this.fireAim.active) return { x: b.x, y: b.y };
+      const d = Math.min(b.r * 0.6, Math.hypot(s.x - s.ox, s.y - s.oy)); return { x: b.x + this.fireAim.x * d, y: b.y + this.fireAim.y * d };
+    }
     consume(id) { const v = this.queue[id]; this.queue[id] = false; return !!v; }
     reset() { this.ptrs = {}; this.down = {}; this.queue = {}; this.update(); }
     draw() {
@@ -80,6 +85,8 @@
           g.lineStyle(2, 0xffffff, 0.35).strokeCircle(b.x, b.y, b.r * 0.62);
           const k = b.r * 0.86, k2 = b.r * 0.66; // crosshair ticks
           g.lineStyle(3, 0xffffff, 0.6).lineBetween(b.x - k, b.y, b.x - k2, b.y).lineBetween(b.x + k2, b.y, b.x + k, b.y).lineBetween(b.x, b.y - k, b.x, b.y - k2).lineBetween(b.x, b.y + k2, b.x, b.y + k);
+          const kp = this.fireKnob(b); // joystick knob: follows the thumb inside the button
+          g.fillStyle(0xffffff, on ? 0.6 : 0.28).fillCircle(kp.x, kp.y, b.r * 0.4);
           continue;
         }
         g.fillStyle(on ? 0xf2c14e : 0x000000, on ? 0.55 : 0.36).fillCircle(b.x, b.y, b.r);
@@ -89,10 +96,7 @@
       this.labels.forEach((t, i) => { const b = this.buttons[i]; t.setVisible(!b.hidden).setText(b.label).setAlpha(b.disabled ? 0.4 : 0.95); });
       for (const s of Object.values(this.ptrs)) {
         if (s.kind === 'btn') continue;
-        if (s.kind === 'fire') { // aim knob inside the fire button
-          if (this.fireAim.active) { const fx = s.x - s.ox, fy = s.y - s.oy, fd = Math.min(s.r * 0.7, Math.hypot(fx, fy)); g.fillStyle(0xffffff, 0.55).fillCircle(s.ox + this.fireAim.x * fd, s.oy + this.fireAim.y * fd, s.r * 0.3); }
-          continue;
-        }
+        if (s.kind === 'fire') continue; // knob drawn with the 开火 button
         g.lineStyle(3, 0xffffff, 0.4).strokeCircle(s.ox, s.oy, this.R).fillStyle(0xffffff, 0.08).fillCircle(s.ox, s.oy, this.R);
         g.fillStyle(s.kind === 'aim' ? 0xff6a4a : 0xffffff, 0.55).fillCircle(s.x, s.y, this.KNOB);
       }
@@ -151,6 +155,7 @@
         this.el.appendChild(m); this.menu = { el: m, fn: menu[1] };
       } else this.menu = null;
       for (let i = 0; i < 3; i++) { const r = document.createElement('div'), k = document.createElement('div'); r.className = 'ring'; k.className = 'knob'; this.el.appendChild(r); this.el.appendChild(k); this.rings.push([r, k]); }
+      const fk = document.createElement('div'); fk.className = 'knob fireknob'; this.el.appendChild(fk); this.fireKnobEl = fk;
       this.sync(this.tc);
     },
     toLogical(t) { const r = this.el.getBoundingClientRect(); return { x: (t.clientX - r.left) / this.s, y: (t.clientY - r.top) / this.s }; },
@@ -168,7 +173,7 @@
             const b = hit.b;
             tc.ptrs[key] = b.kind === 'fire' ? { kind: 'fire', id: b.id, ox: hit.g.x / this.s, oy: hit.g.y / this.s, x: q.x, y: q.y, r: b.r } : { kind: 'btn', id: b.id };
             tc.down[b.id] = true; tc.queue[b.id] = true; tc.emit('press', b.id);
-          } else tc.ptrs[key] = { kind: q.x * this.s < this.w * 0.5 ? 'move' : 'aim', ox: q.x, oy: q.y, x: q.x, y: q.y };
+          } else if (q.x * this.s < this.w * 0.5) tc.ptrs[key] = { kind: 'move', ox: q.x, oy: q.y, x: q.x, y: q.y }; // right half: nothing (no aim/fire outside 开火)
           tc.update();
         } else if (kind === 'move') tc.handleMove({ id: key, x: q.x * DK.R, y: q.y * DK.R });
         else tc.handleUp({ id: key });
@@ -183,6 +188,9 @@
         if (this.cache[b.id + 'l'] !== b.label) { d.textContent = b.label; this.cache[b.id + 'l'] = b.label; }
         d.style.opacity = b.cd > 0 ? 0.55 : '';
       }
+      const fb = tc.buttons.find(b => b.kind === 'fire'), fg = fb && this.geom(fb.id), fk = this.fireKnobEl;
+      if (fk && fg) { const kp = tc.fireKnob({ x: fg.x / this.s, y: fg.y / this.s, r: fg.r / this.s }), kr = fg.r * 0.4;
+        Object.assign(fk.style, { display: fb.hidden ? 'none' : 'block', left: (kp.x * this.s - kr) + 'px', top: (kp.y * this.s - kr) + 'px', width: 2 * kr + 'px', height: 2 * kr + 'px', opacity: tc.fireHeld ? 1 : 0.5 }); }
       const ps = Object.entries(tc.ptrs).filter(([k, p]) => k.startsWith('pad') && (p.kind === 'move' || p.kind === 'aim'));
       const s = this.s, R = tc.R * s, K = tc.KNOB * s;
       let ghost = !ps.some(([, p]) => p.kind === 'move');
