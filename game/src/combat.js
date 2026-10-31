@@ -236,15 +236,17 @@
       this.scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
     }
     invulnerable() { return this.god || DK.god || this.dashT > 0 || this.iframes > 0 || this.dead; }
-    drawAim(firing) { // long dashed aim line + arrow head from the player along aimAng (dark outline so it reads on any floor)
+    drawAim(firing) { // grenade-style aim guide: row of bright dots (dark outline) shrinking/fading to a target ring; gold while firing
       const g = this.aimG; g.clear(); if (this.dead || !this.canFight) return;
-      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, a = firing ? 1 : 0.8, col = firing ? 0xffe08a : 0xffffff, L = 250;
+      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, col = firing ? 0xffd040 : 0xffffff, L = 250, n = 11;
       g.setDepth(this.spr.depth + 2);
-      const dash = (w, cc, aa) => { for (let d = 30; d < L - 26; d += 22) { const e = Math.min(d + 13, L - 22); g.lineStyle(w, cc, aa).lineBetween(ox + c * d, oy + sn * d, ox + c * e, oy + sn * e); } };
-      dash(9, 0x101418, a * 0.75); dash(5, col, a);
-      const tx = ox + c * L, ty = oy + sn * L, px = -sn, py = c;
-      g.fillStyle(0x101418, a * 0.8).fillTriangle(tx + c * 4, ty + sn * 4, tx - c * 25 + px * 15, ty - sn * 25 + py * 15, tx - c * 25 - px * 15, ty - sn * 25 - py * 15);
-      g.fillStyle(col, a).fillTriangle(tx, ty, tx - c * 21 + px * 11, ty - sn * 21 + py * 11, tx - c * 21 - px * 11, ty - sn * 21 - py * 11);
+      for (let i = 0; i < n; i++) {
+        const k = i / (n - 1), d = 32 + k * (L - 52), x = ox + c * d, y = oy + sn * d, r = 5.5 - k * 3, a = 1 - k * 0.55;
+        g.fillStyle(0x101418, a * 0.8).fillCircle(x, y, r + 2); g.fillStyle(col, a).fillCircle(x, y, r);
+      }
+      const tx = ox + c * L, ty = oy + sn * L;
+      g.lineStyle(6, 0x101418, 0.7).strokeCircle(tx, ty, 12); g.lineStyle(3, col, 0.9).strokeCircle(tx, ty, 12);
+      g.fillStyle(0x101418, 0.7).fillCircle(tx, ty, 3.5); g.fillStyle(col, 0.95).fillCircle(tx, ty, 2);
     }
     destroy() { this.spr.destroy(); this.gun.destroy(); this.aimG && this.aimG.destroy(); }
   };
