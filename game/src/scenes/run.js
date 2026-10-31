@@ -261,7 +261,7 @@
       if (e.etype === 'heavy') {
         const from = Math.atan2(-b.body.velocity.y, -b.body.velocity.x);
         if (Math.abs(DK.angDiff(from, e.facing)) < Phaser.Math.DegToRad(e.cfg.shieldArc)) {
-          this.spark(b.x, b.y, 0xbfe0ff, 6); DK.sfx(this, 'shield_block', { minGap: 70 });
+          this.shieldBlocked(e, b); DK.sfx(this, 'shield_block', { minGap: 70 });
           DK.logDamage({ src: b.src, tgt: 'heavy', amt: 0, note: 'shield', hp: e.hp });
           this.killBullet(b); return;
         }
@@ -414,6 +414,18 @@
       if (br.sheet) { v.clearTint(); v.play({ key: 'barrel', startFrame: 3 }); v.once('animationcomplete', () => v.destroy()); } else v.destroy();
       DK.logDamage({ src, tgt: 'barrel', amt: 0, note: 'barrel exploded' });
       this.explode(x, y, DK.BARREL.radius, DK.BARREL.dmg, { src: 'barrel', hurtPlayer: true, hurtEnemies: true, knock: 200 });
+    }
+    // clear "blocked" feedback: big spark, flashing shield arc, blue tint, throttled 格挡 text (game time)
+    shieldBlocked(e, b) {
+      this.spark(b.x, b.y, 0xbfe0ff, 12); this.blockCount = (this.blockCount || 0) + 1;
+      const r = e.cfg.radius + 12, a = Phaser.Math.DegToRad(e.cfg.shieldArc), g = this.add.graphics().setDepth(e.y + 3);
+      g.lineStyle(5, 0xdff2ff, 1).beginPath().arc(e.x, e.y, r, e.facing - a, e.facing + a).strokePath();
+      g.lineStyle(2, 0x7fc4ff, 0.9).beginPath().arc(e.x, e.y, r + 5, e.facing - a, e.facing + a).strokePath();
+      this.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
+      e.setTint(0x9fd3ff); e.shieldImg && e.shieldImg.setTint(0xffffff);
+      this.time.delayedCall(90, () => { if (e.active) e.clearTint(); if (e.shieldImg && e.shieldImg.active) e.shieldImg.clearTint(); });
+      const now = (this.gameT || 0) * 1000;
+      if (now - (e._blkT || 0) > 500) { e._blkT = now; DK.floatText(this, e.x + Phaser.Math.Between(-12, 12), e.y - 36, '格挡', '#bfe0ff', 15); }
     }
     spark(x, y, col, n) {
       if (DK.ART.spark.real && (this.sparkCount || 0) < 24) {
