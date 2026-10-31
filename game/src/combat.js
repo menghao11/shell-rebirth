@@ -236,13 +236,15 @@
       this.scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
     }
     invulnerable() { return this.god || DK.god || this.dashT > 0 || this.iframes > 0 || this.dead; }
-    drawAim(firing) { // dashed aim line + arrow head from the player along aimAng
+    drawAim(firing) { // long dashed aim line + arrow head from the player along aimAng (dark outline so it reads on any floor)
       const g = this.aimG; g.clear(); if (this.dead || !this.canFight) return;
-      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, a = firing ? 0.95 : 0.5, col = firing ? 0xffd27a : 0xffffff;
+      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, a = firing ? 1 : 0.8, col = firing ? 0xffe08a : 0xffffff, L = 250;
       g.setDepth(this.spr.depth + 2);
-      for (let d = 30; d < 78; d += 14) g.lineStyle(3, col, a).lineBetween(ox + c * d, oy + sn * d, ox + c * (d + 8), oy + sn * (d + 8));
-      const tx = ox + c * 92, ty = oy + sn * 92, px = -sn, py = c;
-      g.fillStyle(col, a).fillTriangle(tx, ty, tx - c * 14 + px * 8, ty - sn * 14 + py * 8, tx - c * 14 - px * 8, ty - sn * 14 - py * 8);
+      const dash = (w, cc, aa) => { for (let d = 30; d < L - 26; d += 22) { const e = Math.min(d + 13, L - 22); g.lineStyle(w, cc, aa).lineBetween(ox + c * d, oy + sn * d, ox + c * e, oy + sn * e); } };
+      dash(9, 0x101418, a * 0.75); dash(5, col, a);
+      const tx = ox + c * L, ty = oy + sn * L, px = -sn, py = c;
+      g.fillStyle(0x101418, a * 0.8).fillTriangle(tx + c * 4, ty + sn * 4, tx - c * 25 + px * 15, ty - sn * 25 + py * 15, tx - c * 25 - px * 15, ty - sn * 25 - py * 15);
+      g.fillStyle(col, a).fillTriangle(tx, ty, tx - c * 21 + px * 11, ty - sn * 21 + py * 11, tx - c * 21 - px * 11, ty - sn * 21 - py * 11);
     }
     destroy() { this.spr.destroy(); this.gun.destroy(); this.aimG && this.aimG.destroy(); }
   };
