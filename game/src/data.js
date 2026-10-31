@@ -12,7 +12,7 @@ window.DK = window.DK || {};
   DK.PATHS = { art: '../art/', artWebDir: 'assets/art_web/', audio: '../audio/', story: '../story/story.json' };
 
   // ---- touch controls (logical px; iPhone landscape ≈ 1.4 logical px per pt). Buttons are laid out in run.js / base.js.
-  DK.TOUCH = { stickR: 95, knobR: 40, hitPad: 8, fireAimDead: 18, aimDead: 16, fullAt: 0.75, fireAssist: 620, ghost: [150, 150] };
+  DK.TOUCH = { stickR: 95, knobR: 40, hitPad: 8, fireAimDead: 18, aimDead: 16, fullAt: 0.75, ghost: [150, 150] };
 
   // ---- player (马克中士)
   DK.PLAYER = {

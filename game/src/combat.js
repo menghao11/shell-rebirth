@@ -71,6 +71,7 @@
       DK.setCircleBody(this.spr, P.radius); this.spr.setCollideWorldBounds(true);
       this.radius = P.radius;
       this.gun = scene.add.image(x, y, 'gun_pistol').setOrigin(0.2, 0.5);
+      this.aimG = DK.touchMode ? scene.add.graphics() : null; // touch: aim-direction indicator on the player
       this.aimAng = 0; this.dashT = 0; this.dashDir = { x: 1, y: 0 }; this.dashCdT = 0; this.iframes = 0; this.fireCd = 0;
       this.reloadT = 0; this.empowered = false; this.shots = 0; this.firingFor = 0; this.idleFire = 0;
       this.charges = this.run ? this.run.dashCharges : P.dashCharges;
@@ -152,24 +153,9 @@
       // ---- aim
       let wantFire = false;
       if (DK.touchMode && tc) {
-        if (tc.aim.active) {
-          this.aimAng = Math.atan2(tc.aim.y, tc.aim.x); wantFire = true;
-          const t = this.nearestEnemy(420); // light aim assist (±12°)
-          if (t) { const a = Math.atan2(t.y - this.y, t.x - this.x); if (Math.abs(DK.angDiff(a, this.aimAng)) < 0.21) this.aimAng = a; }
-        } else if (tc.fireHeld) { // 开火 button: hold = fire; drag off its centre = manual aim, otherwise auto-aim
-          wantFire = true;
-          if (tc.fireAim.active) {
-            this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x);
-            const t = this.nearestEnemy(420); if (t) { const a = Math.atan2(t.y - this.y, t.x - this.x); if (Math.abs(DK.angDiff(a, this.aimAng)) < 0.21) this.aimAng = a; }
-          } else {
-            const t = this.nearestEnemy(DK.TOUCH.fireAssist);
-            if (t) this.aimAng = Math.atan2(t.y - this.y, t.x - this.x); else if (mx || my) this.aimAng = Math.atan2(my, mx);
-          }
-        } else {
-          const t = this.nearestEnemy(380);
-          if (t) this.aimAng = Math.atan2(t.y - this.y, t.x - this.x);
-          else if (mx || my) this.aimAng = Math.atan2(my, mx);
-        }
+        // 开火 joystick only: no auto-aim, no auto-fire on touch (user request)
+        if (tc.fireHeld) { wantFire = true; if (tc.fireAim.active) this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x); }
+        else if (mx || my) this.aimAng = Math.atan2(my, mx); // not firing: face where you walk
       } else if (mouse) {
         this.aimAng = Math.atan2(mouse.y / DK.R - this.y, mouse.x / DK.R - this.x);
         wantFire = mouse.isDown && mouse.leftButtonDown && mouse.leftButtonDown();
@@ -195,6 +181,7 @@
       spr.setAlpha(this.iframes > 0 && !this.dashT && Math.floor(s.time.now / 70) % 2 ? 0.5 : 1);
       this.gun.setPosition(spr.x + Math.cos(this.aimAng) * 6, spr.y + 6 + Math.sin(this.aimAng) * 6).setRotation(this.aimAng).setFlipY(left);
       this.animate(!!(mx || my));
+      if (this.aimG) this.drawAim(wantFire);
       if (!this.canFight || !this.run) return;
       // ---- weapon
       const r = this.run, w = this.weapon();
@@ -249,6 +236,14 @@
       this.scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
     }
     invulnerable() { return this.god || DK.god || this.dashT > 0 || this.iframes > 0 || this.dead; }
-    destroy() { this.spr.destroy(); this.gun.destroy(); }
+    drawAim(firing) { // dashed aim line + arrow head from the player along aimAng
+      const g = this.aimG; g.clear(); if (this.dead || !this.canFight) return;
+      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, a = firing ? 0.95 : 0.5, col = firing ? 0xffd27a : 0xffffff;
+      g.setDepth(this.spr.depth + 2);
+      for (let d = 30; d < 78; d += 14) g.lineStyle(3, col, a).lineBetween(ox + c * d, oy + sn * d, ox + c * (d + 8), oy + sn * (d + 8));
+      const tx = ox + c * 92, ty = oy + sn * 92, px = -sn, py = c;
+      g.fillStyle(col, a).fillTriangle(tx, ty, tx - c * 14 + px * 8, ty - sn * 14 + py * 8, tx - c * 14 - px * 8, ty - sn * 14 - py * 8);
+    }
+    destroy() { this.spr.destroy(); this.gun.destroy(); this.aimG && this.aimG.destroy(); }
   };
 })(window.DK);
