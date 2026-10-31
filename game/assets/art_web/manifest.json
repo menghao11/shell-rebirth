@@ -1,0 +1,2096 @@
+{
+ "style": "polished cartoon / chibi, bold outlines, anti-aliased RGBA",
+ "view": "3/4 top-down (oblique), sprites drawn facing RIGHT; flipX for left",
+ "units": "px",
+ "specs": {
+  "style": "Polished cartoon, super-deformed chibi (≈2–2.5 heads tall), bold dark outlines, saturated cel shading; Metal-Slug-inspired military cartoon. Smooth anti-aliased edges, true transparent RGBA, no chroma halo.",
+  "view": "3/4 top-down (oblique) to match BRIEF 斜俯视角双摇杆. All sprites face RIGHT; mirror with flipX for left. Free 360° aim: flip body by aim side, rotate bullets / muzzle flash to the aim angle.",
+  "character_frame": "320x320, anchor (160,300) = feet contact point (bottom-centre). Heights: hero ≈200px, charger ≈190, rifleman ≈200, sniper ≈200, heavy ≈230, 老枪 ≈200, 零件 ≈165, 军火商人 ≈200. Death animations use a WIDER 512x320 frame with anchor (256,300), so the fall fits; the origin is still the feet. Suggested in-game display scale 0.35–0.5 (e.g. 0.4 → hero ≈80px on a 1280x720 / 1920x1080 view).",
+  "feet_alignment": "Every character animation (idle/run/shoot/attack/hurt/death…) is aligned by the FEET, not the body centre. Feet x = midpoint of the lowest silhouette band (bottom 10%). Non-death frames have their feet x on the anchor x (±2px). Death animations are shifted rigidly so that frame 00 has its feet on the anchor and the body then falls naturally. The boss tread centre is at x=320 (±1px). Swapping animations therefore causes no sideways jump; see alignment.json for per-frame numbers.",
+  "frame_counts": "Smoothed motion: run/move cycles are 8 distinct frames, attacks 6 (anticipation → hit → follow-through), hurt 3, death 6–8. Hero: idle 4, run 8, shoot 6, shoot_mg 4, reload 4, dash 6, throw 6, hurt 3, death 8. Each enemy: move 8, attack 6, hurt 3, death 6. Boss: move 8, cannon 6, mg 6, deploy 6, barrage 6, damaged 4, destroy 8, hurt_flash 2. The fps in each row is the suggested playback rate.",
+  "npc": "老枪 (laoqiang, one-eyed veteran quartermaster: sortie + weapons) and 零件 (lingjian, echo-pod repair robot: respawn + armor +10 upgrade). Each has idle 4f at 320x320, anchor (160,300), plus a 512x512 transparent bust portrait for dialogue (npc/<who>/<who>_portrait.png). The hostage stays in npc/hostage. 军火商人 (merchant): original chubby shady black-market arms dealer (purple trench coat lined with weapons, fedora, tiny sunglasses, gold tooth) for the 军火商 room. He has idle 4f at 320x320, anchor (160,300), a 512x512 portrait, and merchant_stall: a trimmed 238x304 3/4 top-down weapons stall with its anchor at the bottom-centre ground contact (119,302). All are in npc/merchant/.",
+  "scene": "scenes/base_tinshack_bg.png is 1920x1080, opaque, 3/4 top-down 铁皮屋 hub. It has the echo pod, upgrade bench, weapon counter and sortie door painted in. Approximate interaction hotspots are in manifest.json → hotspots. The 4 base_* props are optional standalone cut-outs (320x320, anchor (160,312)) for highlights or layering.",
+  "boss_frame": "640x512, anchor (320,490) = tread contact centre. Tank tread band normalised to 316px wide in every frame.",
+  "tiles": "Ground: seamless 256x256 (and 128x128 box-downscaled) opaque; world grid suggestion 128px at 1x (or 64px when sprites are drawn at 0.5). Concrete has 3 variants (concrete, concrete_b, concrete_c) with identical slab joints and edge slabs. Pick one at random per cell (e.g. 60/20/20) to break up repetition; the preview shows a mixed 7x4 test.",
+  "props": "Individual trimmed PNGs, anchor bottom-centre (sandbags ≈200 wide, crates ≈112–128, barrel 256x256 frame with barrel ≈96 tall, anchor (128,236)).",
+  "fx": "Explosion 256x256 centre anchor; muzzle flash 128x96 anchor (4,48) at the muzzle, points right; impact spark 96x96 centre.",
+  "ui": "Icons 128x128, subject fit in 112, centre anchor; scale to 32–64 for HUD.",
+  "naming": "<entity>_<anim>_<NN>.png frames + <entity>_<anim>_sheet.png horizontal strip (frame_count x 1, same frame size). Single sprites have no index.",
+  "pipeline": "Grok Imagine (sprite-gen gen --provider grok) on #00FF00 key with one reference image per character for every animation sheet → sprite-gen slice-sheet (chroma alpha + shared baseline) / sprite-gen cutout → art_src/finalize.py (feet-anchor alignment, haze/speck cleanup, despill, edge fade) → verify.py. Smoothed animations (8-frame cycles, 6-frame attacks, etc.) come from sprite-gen Pipeline B: sprite-gen video-set with each character's same reference image (Grok video on a green key) → video frames → keyed frames → art_src/video_to_cuts.py, which picks loop frames by period fit and one-shot frames by arc-length (with manual picks in video_pick_overrides.json) and scales to the character height. idle, shoot_mg, reload, NPC idles and hostage are still from image sheets."
+ },
+ "assets": [
+  {
+   "name": "hero_idle",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 4,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 6,
+   "loop": true,
+   "purpose": "standing idle, breathing",
+   "sheet": "characters/hero/hero_idle_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_idle_sheet.png\",\"characters/hero/hero_idle_00.png\",[320,320],4,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_run",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 8,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 14,
+   "loop": true,
+   "purpose": "run cycle (also walk), 8 distinct poses from a Grok video clip",
+   "sheet": "characters/hero/hero_run_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_run_sheet.png\",\"characters/hero/hero_run_00.png\",[320,320],8,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_shoot",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 16,
+   "loop": false,
+   "purpose": "pistol shot: 00 brace, 01 fire (flash; spawn bullet), 02 recoil, 03 second-shot flash (optional double tap), 04-05 recover",
+   "sheet": "characters/hero/hero_shoot_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_shoot_sheet.png\",\"characters/hero/hero_shoot_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_shoot_mg",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 4,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 15,
+   "loop": true,
+   "purpose": "machine-gun fire loop (hip fire, casings)",
+   "sheet": "characters/hero/hero_shoot_mg_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_shoot_mg_sheet.png\",\"characters/hero/hero_shoot_mg_00.png\",[320,320],4,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_reload",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 4,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 8,
+   "loop": false,
+   "purpose": "reload (trigger 'next shot +50%' glint on last frame)",
+   "sheet": "characters/hero/hero_reload_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_reload_sheet.png\",\"characters/hero/hero_reload_00.png\",[320,320],4,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_dash",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 18,
+   "loop": false,
+   "purpose": "space dash / dodge-roll: 00 crouch, 01-03 roll, 04-05 pop up",
+   "sheet": "characters/hero/hero_dash_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_dash_sheet.png\",\"characters/hero/hero_dash_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_throw",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 14,
+   "loop": false,
+   "purpose": "Q grenade throw: 00-02 wind-up, release grenade on frame 03, 04-05 follow-through",
+   "sheet": "characters/hero/hero_throw_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_throw_sheet.png\",\"characters/hero/hero_throw_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_hurt",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 3,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "hit reaction: flinch, peak, recover",
+   "sheet": "characters/hero/hero_hurt_sheet.png",
+   "sheet_layout": "3x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_hurt_sheet.png\",\"characters/hero/hero_hurt_00.png\",[320,320],3,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hero_death",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    358,
+    224
+   ],
+   "frame_count": 8,
+   "anchor": [
+    179.2,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "death: stagger, knees, fall; hold last frame. Wide 512x320 frame",
+   "sheet": "characters/hero/hero_death_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"characters/hero/hero_death_sheet.png\",\"characters/hero/hero_death_00.png\",[512,320],8,[256,300]]"
+  },
+  {
+   "name": "charger_move",
+   "group": "enemy/冲锋兵 Charger (30HP, rush + self-destruct)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 8,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 14,
+   "loop": true,
+   "purpose": "sprint toward player, 8-frame cycle",
+   "sheet": "enemies/charger/charger_move_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/charger/charger_move_sheet.png\",\"enemies/charger/charger_move_00.png\",[320,320],8,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "charger_attack",
+   "group": "enemy/冲锋兵 Charger (30HP, rush + self-destruct)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "self-destruct wind-up: lights the fuse, trembling grin; spawn fx_explosion after frame 05 (flash white in code)",
+   "sheet": "enemies/charger/charger_attack_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/charger/charger_attack_sheet.png\",\"enemies/charger/charger_attack_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "charger_hurt",
+   "group": "enemy/冲锋兵 Charger (30HP, rush + self-destruct)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 3,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "hit",
+   "sheet": "enemies/charger/charger_hurt_sheet.png",
+   "sheet_layout": "3x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/charger/charger_hurt_sheet.png\",\"enemies/charger/charger_hurt_00.png\",[320,320],3,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "charger_death",
+   "group": "enemy/冲锋兵 Charger (30HP, rush + self-destruct)",
+   "frame_size": [
+    358,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    179.2,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "killed before exploding (spins, falls, fuse fizzles); wide 512x320 frame",
+   "sheet": "enemies/charger/charger_death_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/charger/charger_death_sheet.png\",\"enemies/charger/charger_death_00.png\",[512,320],6,[256,300]]"
+  },
+  {
+   "name": "rifleman_move",
+   "group": "enemy/步枪兵 Rifleman (40HP, 3-round burst)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 8,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 10,
+   "loop": true,
+   "purpose": "walk, 8-frame cycle",
+   "sheet": "enemies/rifleman/rifleman_move_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/rifleman/rifleman_move_sheet.png\",\"enemies/rifleman/rifleman_move_00.png\",[320,320],8,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "rifleman_attack",
+   "group": "enemy/步枪兵 Rifleman (40HP, 3-round burst)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 14,
+   "loop": false,
+   "purpose": "3-round burst: 00-01 raise, shots on frames 02,03,04 (spawn bullets + fx_muzzle_flash in code), 05 lower",
+   "sheet": "enemies/rifleman/rifleman_attack_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/rifleman/rifleman_attack_sheet.png\",\"enemies/rifleman/rifleman_attack_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "rifleman_hurt",
+   "group": "enemy/步枪兵 Rifleman (40HP, 3-round burst)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 3,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "hit",
+   "sheet": "enemies/rifleman/rifleman_hurt_sheet.png",
+   "sheet_layout": "3x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/rifleman/rifleman_hurt_sheet.png\",\"enemies/rifleman/rifleman_hurt_00.png\",[320,320],3,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "rifleman_death",
+   "group": "enemy/步枪兵 Rifleman (40HP, 3-round burst)",
+   "frame_size": [
+    358,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    179.2,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "death; wide 512x320 frame",
+   "sheet": "enemies/rifleman/rifleman_death_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/rifleman/rifleman_death_sheet.png\",\"enemies/rifleman/rifleman_death_00.png\",[512,320],6,[256,300]]"
+  },
+  {
+   "name": "sniper_move",
+   "group": "enemy/狙击手 Sniper (35HP, 1.5s red-line warning)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 8,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 9,
+   "loop": true,
+   "purpose": "crouched sneak, 8-frame cycle",
+   "sheet": "enemies/sniper/sniper_move_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/sniper/sniper_move_sheet.png\",\"enemies/sniper/sniper_move_00.png\",[320,320],8,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "sniper_attack",
+   "group": "enemy/狙击手 Sniper (35HP, 1.5s red-line warning)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "00 shoulder rifle, 01 aim: HOLD during the 1.5s red laser warning (draw line in code), 02 steady, 03 FIRE (spawn bullet + fx_muzzle_flash), 04 recoil, 05 bolt",
+   "sheet": "enemies/sniper/sniper_attack_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/sniper/sniper_attack_sheet.png\",\"enemies/sniper/sniper_attack_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "sniper_hurt",
+   "group": "enemy/狙击手 Sniper (35HP, 1.5s red-line warning)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 3,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "hit",
+   "sheet": "enemies/sniper/sniper_hurt_sheet.png",
+   "sheet_layout": "3x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/sniper/sniper_hurt_sheet.png\",\"enemies/sniper/sniper_hurt_00.png\",[320,320],3,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "sniper_death",
+   "group": "enemy/狙击手 Sniper (35HP, 1.5s red-line warning)",
+   "frame_size": [
+    358,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    179.2,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "death; wide 512x320 frame",
+   "sheet": "enemies/sniper/sniper_death_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/sniper/sniper_death_sheet.png\",\"enemies/sniper/sniper_death_00.png\",[512,320],6,[256,300]]"
+  },
+  {
+   "name": "heavy_move",
+   "group": "enemy/重装兵 Heavy shield trooper (150HP, front shield)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 8,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 9,
+   "loop": true,
+   "purpose": "stomp walk, shield in front (facing side), 8-frame cycle",
+   "sheet": "enemies/heavy/heavy_move_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/heavy/heavy_move_sheet.png\",\"enemies/heavy/heavy_move_00.png\",[320,320],8,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "heavy_attack",
+   "group": "enemy/重装兵 Heavy shield trooper (150HP, front shield)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "00 brace, 01 raise shotgun, 02 aim over shield, 03 BLAST (spawn pellets), 04 recoil, 05 smoke/pump",
+   "sheet": "enemies/heavy/heavy_attack_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/heavy/heavy_attack_sheet.png\",\"enemies/heavy/heavy_attack_00.png\",[320,320],6,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "heavy_hurt",
+   "group": "enemy/重装兵 Heavy shield trooper (150HP, front shield)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 3,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "hit (shield rattles)",
+   "sheet": "enemies/heavy/heavy_hurt_sheet.png",
+   "sheet_layout": "3x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/heavy/heavy_hurt_sheet.png\",\"enemies/heavy/heavy_hurt_00.png\",[320,320],3,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "heavy_death",
+   "group": "enemy/重装兵 Heavy shield trooper (150HP, front shield)",
+   "frame_size": [
+    358,
+    224
+   ],
+   "frame_count": 6,
+   "anchor": [
+    179.2,
+    210.0
+   ],
+   "fps": 10,
+   "loop": false,
+   "purpose": "death, shield drops; wide 512x320 frame",
+   "sheet": "enemies/heavy/heavy_death_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"enemies/heavy/heavy_death_sheet.png\",\"enemies/heavy/heavy_death_00.png\",[512,320],6,[256,300]]"
+  },
+  {
+   "name": "hostage_tied",
+   "group": "npc/人质 Hostage",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 2,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 4,
+   "loop": true,
+   "purpose": "tied up, waiting for rescue",
+   "sheet": "npc/hostage/hostage_tied_sheet.png",
+   "sheet_layout": "2x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"npc/hostage/hostage_tied_sheet.png\",\"npc/hostage/hostage_tied_00.png\",[320,320],2,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "hostage_freed",
+   "group": "npc/人质 Hostage",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 2,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 6,
+   "loop": false,
+   "purpose": "freed: stand up, salute",
+   "sheet": "npc/hostage/hostage_freed_sheet.png",
+   "sheet_layout": "2x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"npc/hostage/hostage_freed_sheet.png\",\"npc/hostage/hostage_freed_00.png\",[320,320],2,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "laoqiang_idle",
+   "group": "npc/老枪 Old Gun (军火官 quartermaster: sortie + weapons)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 4,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 6,
+   "loop": true,
+   "purpose": "one-eyed veteran quartermaster polishing his revolver (idle loop)",
+   "sheet": "npc/laoqiang/laoqiang_idle_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"npc/laoqiang/laoqiang_idle_sheet.png\",\"npc/laoqiang/laoqiang_idle_00.png\",[320,320],4,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "laoqiang_portrait",
+   "group": "npc/老枪 Old Gun (军火官 quartermaster: sortie + weapons)",
+   "frame_size": [
+    358,
+    358
+   ],
+   "frame_count": 1,
+   "anchor": [
+    179.2,
+    358.4
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dialogue portrait, bust, faces right (flipX to face left); bottom edge is the bust cut",
+   "file": "npc/laoqiang/laoqiang_portrait.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"npc/laoqiang/laoqiang_portrait.png\",[512,512],1,[256,512]]"
+  },
+  {
+   "name": "lingjian_idle",
+   "group": "npc/零件 Parts (回响舱维修机器人: revive + armor +10 upgrade)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 4,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 6,
+   "loop": true,
+   "purpose": "echo-pod repair robot bobbing on its treads, screen blinks (idle loop)",
+   "sheet": "npc/lingjian/lingjian_idle_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"npc/lingjian/lingjian_idle_sheet.png\",\"npc/lingjian/lingjian_idle_00.png\",[320,320],4,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "lingjian_portrait",
+   "group": "npc/零件 Parts (回响舱维修机器人: revive + armor +10 upgrade)",
+   "frame_size": [
+    358,
+    358
+   ],
+   "frame_count": 1,
+   "anchor": [
+    179.2,
+    358.4
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dialogue portrait, bust, faces right (flipX to face left); bottom edge is the bust cut",
+   "file": "npc/lingjian/lingjian_portrait.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"npc/lingjian/lingjian_portrait.png\",[512,512],1,[256,512]]"
+  },
+  {
+   "name": "merchant_idle",
+   "group": "npc/军火商人 Arms Dealer (军火商 room: buy weapons / ammo / upgrades with scrap)",
+   "frame_size": [
+    224,
+    224
+   ],
+   "frame_count": 4,
+   "anchor": [
+    112.0,
+    210.0
+   ],
+   "fps": 6,
+   "loop": true,
+   "purpose": "chubby shady arms dealer flashing the weapons in his open trench coat, brows wiggle, gold tooth sparkle on 02 (idle loop)",
+   "sheet": "npc/merchant/merchant_idle_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.7,
+   "src_sig": "[\"npc/merchant/merchant_idle_sheet.png\",\"npc/merchant/merchant_idle_00.png\",[320,320],4,[160,300]]",
+   "x_offset": 0
+  },
+  {
+   "name": "merchant_portrait",
+   "group": "npc/军火商人 Arms Dealer (军火商 room: buy weapons / ammo / upgrades with scrap)",
+   "frame_size": [
+    358,
+    358
+   ],
+   "frame_count": 1,
+   "anchor": [
+    179.2,
+    358.4
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dialogue portrait, bust, faces right (flipX to face left); bottom edge is the bust cut",
+   "file": "npc/merchant/merchant_portrait.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"npc/merchant/merchant_portrait.png\",[512,512],1,[256,512]]"
+  },
+  {
+   "name": "merchant_stall",
+   "group": "npc/军火商人 Arms Dealer (军火商 room: buy weapons / ammo / upgrades with scrap)",
+   "frame_size": [
+    167,
+    213
+   ],
+   "frame_count": 1,
+   "anchor": [
+    83.3,
+    211.4
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "black-market weapons stall (3/4 top-down), trimmed, anchor = bottom-centre ground contact; place the merchant standing just in front/beside it (counter front ≈ lower 40% of the image)",
+   "file": "npc/merchant/merchant_stall.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"npc/merchant/merchant_stall.png\",[238,304],1,[119,302]]"
+  },
+  {
+   "name": "base_tinshack_bg",
+   "group": "scenes/铁皮屋 Tin Shack base",
+   "frame_size": [
+    1920,
+    1080
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "opaque": true,
+   "purpose": "base hub background (3/4 top-down), opaque. Built-in: echo pod (upper-left), upgrade bench + robot dock (top-middle), weapon rack counter (top-right), sortie garage door (lower-right).",
+   "hotspots": {
+    "echo_pod_respawn": [
+     300,
+     420
+    ],
+    "lingjian_bench_upgrade": [
+     1120,
+     390
+    ],
+    "laoqiang_counter_weapons": [
+     1450,
+     330
+    ],
+    "sortie_door_exit": [
+     1515,
+     700
+    ],
+    "player_spawn": [
+     520,
+     560
+    ],
+    "walkable_floor_rect": [
+     230,
+     290,
+     1820,
+     1040
+    ]
+   },
+   "hotspot_note": "approx. floor points in 1920x1080 px (place NPCs / interaction zones here); walkable rect is x0,y0,x1,y1 before prop collision",
+   "file": "scenes/base_tinshack_bg.jpg",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"scenes/base_tinshack_bg.png\",[1920,1080],1,[0,0]]"
+  },
+  {
+   "name": "base_echo_pod",
+   "group": "scenes/铁皮屋 Tin Shack base",
+   "frame_size": [
+    240,
+    240
+   ],
+   "frame_count": 1,
+   "anchor": [
+    120.0,
+    234.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "死亡回响舱 echo pod (respawn) as a standalone prop / interact highlight; transparent 320x320, anchor bottom-centre; optional (already painted into base_tinshack_bg)",
+   "file": "scenes/base_echo_pod.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"scenes/base_echo_pod.png\",[320,320],1,[160,312]]"
+  },
+  {
+   "name": "base_upgrade_bench",
+   "group": "scenes/铁皮屋 Tin Shack base",
+   "frame_size": [
+    240,
+    240
+   ],
+   "frame_count": 1,
+   "anchor": [
+    120.0,
+    234.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "零件's 改装台 upgrade bench (armor +10); transparent 320x320, anchor bottom-centre; optional (already painted into base_tinshack_bg)",
+   "file": "scenes/base_upgrade_bench.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"scenes/base_upgrade_bench.png\",[320,320],1,[160,312]]"
+  },
+  {
+   "name": "base_weapon_counter",
+   "group": "scenes/铁皮屋 Tin Shack base",
+   "frame_size": [
+    240,
+    240
+   ],
+   "frame_count": 1,
+   "anchor": [
+    120.0,
+    234.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "老枪's weapon rack counter; transparent 320x320, anchor bottom-centre; optional (already painted into base_tinshack_bg)",
+   "file": "scenes/base_weapon_counter.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"scenes/base_weapon_counter.png\",[320,320],1,[160,312]]"
+  },
+  {
+   "name": "base_sortie_door",
+   "group": "scenes/铁皮屋 Tin Shack base",
+   "frame_size": [
+    240,
+    240
+   ],
+   "frame_count": 1,
+   "anchor": [
+    120.0,
+    234.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "出击 sortie garage door (exit to run); transparent 320x320, anchor bottom-centre; optional (already painted into base_tinshack_bg)",
+   "file": "scenes/base_sortie_door.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"scenes/base_sortie_door.png\",[320,320],1,[160,312]]"
+  },
+  {
+   "name": "boss_move",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 8,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 10,
+   "loop": true,
+   "purpose": "phase 1-2 idle/drive (treads + exhaust), 8-frame cycle",
+   "sheet": "boss/boss_move_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_move_sheet.png\",\"boss/boss_move_00.png\",[640,512],8,[320,490]]"
+  },
+  {
+   "name": "boss_hurt_flash",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 2,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 20,
+   "loop": false,
+   "purpose": "hit flash overlay frames (white, red); or tint boss_* in code",
+   "sheet": "boss/boss_hurt_flash_sheet.png",
+   "sheet_layout": "2x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_hurt_flash_sheet.png\",\"boss/boss_hurt_flash_00.png\",[640,512],2,[320,490]]"
+  },
+  {
+   "name": "boss_cannon",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 6,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "phase 1 main cannon: 00 settle, 01 FIRE (spawn shell_boss), 02-05 recoil + smoke",
+   "sheet": "boss/boss_cannon_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_cannon_sheet.png\",\"boss/boss_cannon_00.png\",[640,512],6,[320,490]]"
+  },
+  {
+   "name": "boss_mg",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 6,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 18,
+   "loop": true,
+   "purpose": "phase 1 side machine-gun loop",
+   "sheet": "boss/boss_mg_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_mg_sheet.png\",\"boss/boss_mg_00.png\",[640,512],6,[320,490]]"
+  },
+  {
+   "name": "boss_deploy",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 6,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 8,
+   "loop": false,
+   "purpose": "phase 2: 00-01 rear hatch opens, 02 drops landmine / spawns minion, 03-05 closes",
+   "sheet": "boss/boss_deploy_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_deploy_sheet.png\",\"boss/boss_deploy_00.png\",[640,512],6,[320,490]]"
+  },
+  {
+   "name": "boss_barrage",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 6,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 14,
+   "loop": true,
+   "purpose": "phase 3: turret spins, 360° bullet barrage (spawn bullets in code)",
+   "sheet": "boss/boss_barrage_sheet.png",
+   "sheet_layout": "6x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_barrage_sheet.png\",\"boss/boss_barrage_00.png\",[640,512],6,[320,490]]"
+  },
+  {
+   "name": "boss_damaged",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 4,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 8,
+   "loop": true,
+   "purpose": "damaged-state drive loop (<50% HP / phase 3)",
+   "sheet": "boss/boss_damaged_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_damaged_sheet.png\",\"boss/boss_damaged_00.png\",[640,512],4,[320,490]]"
+  },
+  {
+   "name": "boss_destroy",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    480,
+    384
+   ],
+   "frame_count": 8,
+   "anchor": [
+    240.0,
+    367.5
+   ],
+   "fps": 8,
+   "loop": false,
+   "purpose": "destruction: 00-03 fireball bursts, 04-05 smoke, 06-07 wreck; hold last frame as wreck",
+   "sheet": "boss/boss_destroy_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"boss/boss_destroy_sheet.png\",\"boss/boss_destroy_00.png\",[640,512],8,[320,490]]"
+  },
+  {
+   "name": "fx_explosion",
+   "group": "fx",
+   "frame_size": [
+    154,
+    154
+   ],
+   "frame_count": 8,
+   "anchor": [
+    76.8,
+    76.8
+   ],
+   "fps": 16,
+   "loop": false,
+   "purpose": "generic big explosion (grenade, barrel, charger, boss shell); centre anchor",
+   "sheet": "fx/fx_explosion_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.6,
+   "src_sig": "[\"fx/fx_explosion_sheet.png\",\"fx/fx_explosion_00.png\",[256,256],8,[128,128]]"
+  },
+  {
+   "name": "fx_muzzle_flash",
+   "group": "fx",
+   "frame_size": [
+    77,
+    58
+   ],
+   "frame_count": 4,
+   "anchor": [
+    2.4,
+    28.8
+   ],
+   "fps": 30,
+   "loop": false,
+   "purpose": "muzzle flash pointing right; anchor = muzzle point (left-centre); rotate to aim; play 1-2 frames per shot",
+   "sheet": "fx/fx_muzzle_flash_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.6,
+   "src_sig": "[\"fx/fx_muzzle_flash_sheet.png\",\"fx/fx_muzzle_flash_00.png\",[128,96],4,[4,48]]"
+  },
+  {
+   "name": "fx_impact_spark",
+   "group": "fx",
+   "frame_size": [
+    58,
+    58
+   ],
+   "frame_count": 4,
+   "anchor": [
+    28.8,
+    28.8
+   ],
+   "fps": 20,
+   "loop": false,
+   "purpose": "bullet impact sparks + dust; centre anchor",
+   "sheet": "fx/fx_impact_spark_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "res_scale": 0.6,
+   "src_sig": "[\"fx/fx_impact_spark_sheet.png\",\"fx/fx_impact_spark_00.png\",[96,96],4,[48,48]]"
+  },
+  {
+   "name": "barrel",
+   "group": "props/爆炸桶 explosive barrel",
+   "frame_size": [
+    154,
+    154
+   ],
+   "frame_count": 8,
+   "anchor": [
+    76.8,
+    141.6
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "00 intact, 01 damaged (idle when hit), 02 about-to-blow, 03-07 explosion; anchor bottom-centre",
+   "sheet": "props/barrel_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.6,
+   "src_sig": "[\"props/barrel_sheet.png\",\"props/barrel_00.png\",[256,256],8,[128,236]]"
+  },
+  {
+   "name": "bullet_player",
+   "group": "projectiles",
+   "frame_size": [
+    48,
+    24
+   ],
+   "frame_count": 1,
+   "anchor": [
+    24.0,
+    12.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "player pistol/MG bullet (points right; rotate)",
+   "file": "projectiles/bullet_player.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/bullet_player.png\",[48,24],1,[24,12]]"
+  },
+  {
+   "name": "bullet_enemy",
+   "group": "projectiles",
+   "frame_size": [
+    34,
+    24
+   ],
+   "frame_count": 1,
+   "anchor": [
+    17.0,
+    12.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "enemy rifle/MG energy bullet",
+   "file": "projectiles/bullet_enemy.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/bullet_enemy.png\",[34,24],1,[17,12]]"
+  },
+  {
+   "name": "shell_boss",
+   "group": "projectiles",
+   "frame_size": [
+    84,
+    41
+   ],
+   "frame_count": 1,
+   "anchor": [
+    42.0,
+    20.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Anvil Tank main cannon shell",
+   "file": "projectiles/shell_boss.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/shell_boss.png\",[84,41],1,[42,20]]"
+  },
+  {
+   "name": "bullet_fire",
+   "group": "projectiles",
+   "frame_size": [
+    50,
+    34
+   ],
+   "frame_count": 1,
+   "anchor": [
+    25.0,
+    17.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "incendiary bullet variant (燃烧)",
+   "file": "projectiles/bullet_fire.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/bullet_fire.png\",[50,34],1,[25,17]]"
+  },
+  {
+   "name": "bullet_ice",
+   "group": "projectiles",
+   "frame_size": [
+    40,
+    32
+   ],
+   "frame_count": 1,
+   "anchor": [
+    20.0,
+    16.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "freeze bullet variant (冰冻)",
+   "file": "projectiles/bullet_ice.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/bullet_ice.png\",[40,32],1,[20,16]]"
+  },
+  {
+   "name": "bullet_split",
+   "group": "projectiles",
+   "frame_size": [
+    56,
+    44
+   ],
+   "frame_count": 1,
+   "anchor": [
+    28.0,
+    22.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "split bullet fragments (分裂)",
+   "file": "projectiles/bullet_split.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/bullet_split.png\",[56,44],1,[28,22]]"
+  },
+  {
+   "name": "shell_casing",
+   "group": "projectiles",
+   "frame_size": [
+    30,
+    20
+   ],
+   "frame_count": 1,
+   "anchor": [
+    15.0,
+    10.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "ejected brass casing particle (弹壳)",
+   "file": "projectiles/shell_casing.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/shell_casing.png\",[30,20],1,[15,10]]"
+  },
+  {
+   "name": "grenade",
+   "group": "projectiles",
+   "frame_size": [
+    36,
+    42
+   ],
+   "frame_count": 1,
+   "anchor": [
+    18.0,
+    21.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "thrown grenade (Q)",
+   "file": "projectiles/grenade.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/grenade.png\",[36,42],1,[18,21]]"
+  },
+  {
+   "name": "landmine",
+   "group": "projectiles",
+   "frame_size": [
+    54,
+    48
+   ],
+   "frame_count": 1,
+   "anchor": [
+    27.0,
+    24.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "boss phase-2 landmine",
+   "file": "projectiles/landmine.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"projectiles/landmine.png\",[54,48],1,[27,24]]"
+  },
+  {
+   "name": "cover_sandbags",
+   "group": "props",
+   "frame_size": [
+    156,
+    110
+   ],
+   "frame_count": 1,
+   "anchor": [
+    78.0,
+    107.25
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "sandbag cover (curved); anchor bottom-centre",
+   "file": "props/cover_sandbags.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/cover_sandbags.png\",[208,147],1,[104,143]]"
+  },
+  {
+   "name": "cover_crate_wood",
+   "group": "props",
+   "frame_size": [
+    90,
+    88
+   ],
+   "frame_count": 1,
+   "anchor": [
+    45.0,
+    84.75
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "wooden crate cover (destructible); anchor bottom-centre",
+   "file": "props/cover_crate_wood.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/cover_crate_wood.png\",[120,117],1,[60,113]]"
+  },
+  {
+   "name": "cover_crate_ammo",
+   "group": "props",
+   "frame_size": [
+    89,
+    81
+   ],
+   "frame_count": 1,
+   "anchor": [
+    44.25,
+    78.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "ammo crate cover; anchor bottom-centre",
+   "file": "props/cover_crate_ammo.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/cover_crate_ammo.png\",[119,108],1,[59,104]]"
+  },
+  {
+   "name": "cover_concrete_barrier",
+   "group": "props",
+   "frame_size": [
+    108,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    54.0,
+    93.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "concrete jersey barrier (hard cover); anchor bottom-centre",
+   "file": "props/cover_concrete_barrier.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/cover_concrete_barrier.png\",[144,128],1,[72,124]]"
+  },
+  {
+   "name": "obstacle_tank_hedgehog",
+   "group": "props",
+   "frame_size": [
+    98,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.75,
+    93.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "steel hedgehog obstacle; anchor bottom-centre",
+   "file": "props/obstacle_tank_hedgehog.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/obstacle_tank_hedgehog.png\",[130,128],1,[65,124]]"
+  },
+  {
+   "name": "obstacle_tires",
+   "group": "props",
+   "frame_size": [
+    57,
+    88
+   ],
+   "frame_count": 1,
+   "anchor": [
+    28.5,
+    85.5
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "tire stack; anchor bottom-centre",
+   "file": "props/obstacle_tires.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/obstacle_tires.png\",[76,118],1,[38,114]]"
+  },
+  {
+   "name": "obstacle_barbed_wire",
+   "group": "props",
+   "frame_size": [
+    89,
+    81
+   ],
+   "frame_count": 1,
+   "anchor": [
+    44.25,
+    78.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "barbed wire (slows); anchor bottom-centre",
+   "file": "props/obstacle_barbed_wire.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/obstacle_barbed_wire.png\",[119,108],1,[59,104]]"
+  },
+  {
+   "name": "cover_brick_wall_broken",
+   "group": "props",
+   "frame_size": [
+    116,
+    104
+   ],
+   "frame_count": 1,
+   "anchor": [
+    57.75,
+    100.5
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "broken brick wall cover; anchor bottom-centre",
+   "file": "props/cover_brick_wall_broken.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/cover_brick_wall_broken.png\",[154,138],1,[77,134]]"
+  },
+  {
+   "name": "debris_crate_broken",
+   "group": "props",
+   "frame_size": [
+    86,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    42.75,
+    93.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "destroyed crate debris (after crate breaks); anchor bottom-centre",
+   "file": "props/debris_crate_broken.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"props/debris_crate_broken.png\",[115,128],1,[57,124]]"
+  },
+  {
+   "name": "icon_ammo",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "ammo; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_ammo.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_ammo.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_ammo_fire",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "ammo type: burning 燃烧; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_ammo_fire.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_ammo_fire.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_ammo_ice",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "ammo type: freeze 冰冻; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_ammo_ice.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_ammo_ice.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_ammo_split",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "ammo type: split 分裂; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_ammo_split.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_ammo_split.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_armor",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "armor +10 HP upgrade (base shop); 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_armor.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_armor.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_boss",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "boss room marker; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_boss.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_boss.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_chip",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "chip 芯片; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_chip.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_chip.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_coin",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "coin / gold; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_coin.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_coin.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_crosshair",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "aim cursor; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_crosshair.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_crosshair.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_danger",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "danger / explosive marker; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_danger.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_danger.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_dash",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dash (space); 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_dash.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_dash.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_death",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "death / run summary; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_death.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_death.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_grenade",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "grenade (Q); 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_grenade.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_grenade.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_health",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "health / HP; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_health.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_health.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_hostage",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "hostage room marker; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_hostage.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_hostage.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_magazine",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "magazine / reload; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_magazine.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_magazine.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_medal",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "medal 勋章; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_medal.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_medal.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_medkit",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "heal pickup; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_medkit.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_medkit.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_reaction_steam",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "reaction: steam explosion 蒸汽爆炸; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_reaction_steam.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_reaction_steam.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_reload_bonus",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Sgt. Mark passive: next shot +50% after reload; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_reload_bonus.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_reload_bonus.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_reward_chest",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "room reward (pick 1 of 3); 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_reward_chest.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_reward_chest.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_rope",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "rescue / untie; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_rope.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_rope.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_scrap",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "scrap 废铁 (meta currency); 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_scrap.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_scrap.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_weapon_mg",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "weapon: machine gun; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_weapon_mg.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_weapon_mg.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "icon_weapon_pistol",
+   "group": "ui",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    48.0,
+    48.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "weapon: pistol; 128x128, scale down to 32-64 for HUD",
+   "file": "ui/icon_weapon_pistol.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"ui/icon_weapon_pistol.png\",[128,128],1,[64,64]]"
+  },
+  {
+   "name": "tile_ground_dirt_256",
+   "group": "tiles",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (dirt), tiles both axes; opaque by design",
+   "file": "tiles/tile_ground_dirt_256.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_dirt_256.png\",[256,256],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_dirt_128",
+   "group": "tiles",
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (dirt), tiles both axes; opaque by design",
+   "file": "tiles/tile_ground_dirt_128.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_dirt_128.png\",[128,128],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_concrete_256",
+   "group": "tiles",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (concrete), tiles both axes; opaque by design; concrete/_b/_c share identical joints + edge slabs, so they can be mixed randomly on one grid",
+   "file": "tiles/tile_ground_concrete_256.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_concrete_256.png\",[256,256],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_concrete_128",
+   "group": "tiles",
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (concrete), tiles both axes; opaque by design; concrete/_b/_c share identical joints + edge slabs, so they can be mixed randomly on one grid",
+   "file": "tiles/tile_ground_concrete_128.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_concrete_128.png\",[128,128],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_concrete_b_256",
+   "group": "tiles",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (concrete_b), tiles both axes; opaque by design; concrete/_b/_c share identical joints + edge slabs, so they can be mixed randomly on one grid",
+   "file": "tiles/tile_ground_concrete_b_256.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_concrete_b_256.png\",[256,256],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_concrete_b_128",
+   "group": "tiles",
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (concrete_b), tiles both axes; opaque by design; concrete/_b/_c share identical joints + edge slabs, so they can be mixed randomly on one grid",
+   "file": "tiles/tile_ground_concrete_b_128.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_concrete_b_128.png\",[128,128],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_concrete_c_256",
+   "group": "tiles",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (concrete_c), tiles both axes; opaque by design; concrete/_b/_c share identical joints + edge slabs, so they can be mixed randomly on one grid",
+   "file": "tiles/tile_ground_concrete_c_256.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_concrete_c_256.png\",[256,256],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_concrete_c_128",
+   "group": "tiles",
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (concrete_c), tiles both axes; opaque by design; concrete/_b/_c share identical joints + edge slabs, so they can be mixed randomly on one grid",
+   "file": "tiles/tile_ground_concrete_c_128.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_concrete_c_128.png\",[128,128],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_grass_256",
+   "group": "tiles",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (grass), tiles both axes; opaque by design",
+   "file": "tiles/tile_ground_grass_256.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_grass_256.png\",[256,256],1,[0,0]]"
+  },
+  {
+   "name": "tile_ground_grass_128",
+   "group": "tiles",
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "seamless ground (grass), tiles both axes; opaque by design",
+   "file": "tiles/tile_ground_grass_128.png",
+   "res_scale": 1.0,
+   "src_sig": "[null,\"tiles/tile_ground_grass_128.png\",[128,128],1,[0,0]]"
+  }
+ ]
+}
