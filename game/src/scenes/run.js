@@ -208,11 +208,11 @@
     spawnWithTelegraph(type, x, y) {
       const r = DK.ENEMIES[type].radius + 4;
       ({ x, y } = x == null || !this.spawnOk(x, y, r) ? this.findSpawn(r, x, y) : { x, y });
-      this.pending++;
+      this.pending++; const gen = this.spawnGen || 0;
       const ring = this.add.circle(x, y, 22, 0xff3030, 0.25).setStrokeStyle(2, 0xff3030).setDepth(5);
       this.tweens.add({ targets: ring, scale: 0.4, alpha: 0.9, duration: 650, onComplete: () => {
         ring.destroy(); this.pending--;
-        if (this.state === 'dead' || this.state === 'won') return;
+        if (this.state === 'dead' || this.state === 'won' || (this.spawnGen || 0) !== gen) return;
         if (!this.spawnOk(x, y, r)) ({ x, y } = this.findSpawn(r, x, y)); // re-check: the boss may have moved onto the ring
         DK.spawnEnemy(this, type, x, y);
       } });
@@ -698,9 +698,9 @@
       if (this.boss && this.boss.active && this.boss.alive) {
         const b = this.boss, bw = 420, x = DK.W / 2 - bw / 2, y = DK.touchMode ? 54 : DK.H - 36; // touch: top, clear of the thumb buttons
         g.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, bw + 4, 14);
-        const locked = b.armorLocked(); g.fillStyle(b.invulnT > 0 ? 0x888888 : locked ? 0x7fa8cc : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
+        const locked = b.armorLocked(), plate = Math.round((b.plateRed || 0) * 100); g.fillStyle(b.invulnT > 0 ? 0x888888 : locked || plate >= 15 ? 0x7fa8cc : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
         g.fillStyle(0xffffff, 0.8).fillRect(x + bw * DK.BOSS.phase2At / b.maxHp, y - 2, 2, 14).fillRect(x + bw * DK.BOSS.phase3At / b.maxHp, y - 2, 2, 14);
-        h.boss.setText(`铁砧  ${Math.ceil(b.hp)} / ${b.maxHp}   阶段 ${b.phase}` + (locked ? `   装甲 ${Math.ceil(b.armorLeft())}s` : '')).setVisible(true);
+        h.boss.setText(`铁砧  ${Math.ceil(b.hp)} / ${b.maxHp}   阶段 ${b.phase}` + (locked ? `   装甲锁定 ${Math.ceil(b.armorLeft())}s` : plate >= 5 ? `   装甲 -${plate}%` : '')).setVisible(true);
       } else h.boss.setVisible(false);
       // interact prompt
       const it = !this.isPaused() && this.nearInteract();
@@ -722,9 +722,9 @@
       const paused = this.isPaused();
       this.player.update(paused ? 0 : dt);
       const g = this.fxG; g.clear();
+      this.containEnemies(); // also while paused/dialogue
       if (!paused) {
         this.enemies.getChildren().slice().forEach(e => e.alive && DK.updateEnemy(this, e, dt));
-        this.containEnemies();
         if (this.boss) this.boss.update(dt);
         // bullet lifetimes
         const now = this.time.now;

@@ -51,16 +51,21 @@ window.DK = window.DK || {};
 
   // ---- boss 铁砧
   DK.BOSS = {
-    name: '铁砧', hp: 3000, phase2At: 2000, phase3At: 1000, contact: 20, radius: 58,
+    name: '铁砧', hp: 2200, phase2At: 1470, phase3At: 740, contact: 20, radius: 58,
     cannonDmg: 22, cannonSpeed: 620, cannonTele: 0.9,
     mgDmg: 5, mgSpeed: 300,
     mineDmg: 20, mineMax: 8, minionMax: 4,
     ringDmg: 8, ringSpeed: 135, ringCount: 26, ringGap: 4, ringEvery: 0.95,
     phaseInvuln: 1.6,
     // sprite top ≈ y − 162 (640x512 frame × 0.45, feet anchor): keep y ≥ minY so the tank + barrage smoke stay under the HUD
-    // 装甲锁 (N1): each phase must last at least phaseMinT[phase-1] s of GAME time; until then HP can't drop past
-    // the next phase line (phase 3: past 1). Visible: steel tint, "装甲 Xs" on the bar + float text. Replaces the old hidden DPS soft cap.
-    phaseMinT: [18, 19, 24],
+    // Boss armour (N1, retest 2). All timing is GAME time.
+    // 装甲板: with raw DPS d (exp. average, plateTau s) above plateDps, effective DPS = plateDps·(d/plateDps)^platePow,
+    //   i.e. every upgrade still speeds the fight up (constant ~platePow elasticity), but the gap from pistol to full build shrinks.
+    //   Visible: "装甲 -XX%" on the boss bar + steel tint/outline when ≥ 15 %.
+    // 装甲锁: safety floor — each phase lasts ≥ phaseMinT s; until then HP stops at the next phase line (phase 3: at 1 HP,
+    //   with a big "装甲锁定 Xs 后可击毁" label). With the plate tuned as below it should rarely trigger.
+    plateDps: 20, platePow: 0.2, plateTau: 3,
+    phaseMinT: [14, 15, 10],
     homeY: 195, minY: 178, p3X: 480, p3Y: 215, p2MinY: 205
   };
 

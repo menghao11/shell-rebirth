@@ -16,7 +16,8 @@
       this.dir = 1; this.cannonTele = null; this.ringOff = 0; this.flashT = 0;
       this.st = { burn: 0, burnT: 0, burnTick: 0, frz: 0, frozenT: 0, immuneT: 0, steamCd: 0 };
       this.radius = B.radius; this.x0 = x;
-      this.startTime = 0; this.phaseT = 0; this.armorHits = 0;
+      this.startTime = 0; this.phaseT = 0; this.armorHits = 0; this.plateD = 0; this.plateT = 0; this.plateRed = 0; this.plateLost = 0;
+      this.lockTxt = DK.txt(scene, x, y, '', { fontSize: '20px', color: '#cfe6ff', fontStyle: 'bold', stroke: '#1b2b3a', strokeThickness: 5 }).setOrigin(0.5).setVisible(false);
     }
     get x() { return this.spr.x; } get y() { return this.spr.y; }
     setPhase(n) {
@@ -31,6 +32,7 @@
       if (n === 3) {
         this.spr.setVelocity(0);
         // phase 3 is the bullet-hell duel: leftover phase-2 minions and mines fizzle out (review P2-4)
+        s.spawnGen = (s.spawnGen || 0) + 1; // cancel minion telegraphs still on the ground
         s.enemies.getChildren().slice().forEach(e => { if (e.alive) { s.explode(e.x, e.y, 30, 0, { src: 'fx', visualOnly: true }); s.killEnemy(e, 'phase3'); } });
         if (s.mines) { s.mines.slice().forEach(m => { if (m.active) { s.spark && s.spark(m.x, m.y, 0xffe08a); m.destroy(); } }); s.mines.length = 0; }
       }
@@ -43,6 +45,11 @@
     }
     armorLeft() { const g = (DK.BOSS.phaseMinT || [])[this.phase - 1]; return g ? Math.max(0, g - this.phaseT) : 0; }
     armorLocked() { const f = this.armorFloor(); return f != null && this.hp <= f; }
+    // 装甲板: exponential average of raw DPS (game time); returns the multiplier for a hit of `amount`
+    plateDecay() { const B = DK.BOSS, now = this.scene.gameT || 0, dt = now - (this.plateT || 0); this.plateT = now; this.plateD = (this.plateD || 0) * Math.exp(-Math.max(0, dt) / B.plateTau); return this.plateD; }
+    plateCurve(d) { const B = DK.BOSS; return d <= B.plateDps ? 1 : Math.pow(B.plateDps / d, 1 - B.platePow); }
+    plateMul(amount) { if (!DK.BOSS.plateDps) return 1; this.plateDecay(); this.plateD += amount / DK.BOSS.plateTau; return this.plateCurve(this.plateD); }
+    plateNow() { if (!DK.BOSS.plateDps) return 0; return 1 - this.plateCurve(this.plateDecay()); }
     damage(amount, info) {
       if (!this.alive) return 0;
       if (this.invulnT > 0 || !this.active) {
@@ -52,7 +59,8 @@
         return 0;
       }
       const dbg = info && info.src === 'dbg';
-      if (dbg && amount >= this.hp) { this.hp = 0; this.alive = false; this.scene.onBossDead(this); return amount; } // __dbg.win(): one call, any phase (N3)
+      if (dbg && amount >= this.hp) { this.hp = 0; this.alive = false; this.lockTxt.setVisible(false); this.scene.onBossDead(this); return amount; } // __dbg.win(): one call, any phase (N3)
+      if (!dbg) { const raw = amount; amount *= this.plateMul(raw); this.plateLost += raw - amount; }
       const floor = dbg ? null : this.armorFloor();
       if (floor != null && this.hp - amount < floor) {
         const s = this.scene, now = (s.gameT || 0) * 1000;
@@ -63,7 +71,7 @@
       this.hp -= amount; this.flashT = 0.06;
       if (this.hp <= DK.BOSS.phase3At && this.phase < 3) { this.hp = Math.max(this.hp, 1); this.setPhase(3); }
       else if (this.hp <= DK.BOSS.phase2At && this.phase < 2) this.setPhase(2);
-      if (this.hp <= 0) { this.hp = 0; this.alive = false; this.scene.onBossDead(this); }
+      if (this.hp <= 0) { this.hp = 0; this.alive = false; this.lockTxt.setVisible(false); this.scene.onBossDead(this); }
       return amount;
     }
     update(dt) {
@@ -75,7 +83,8 @@
       if (st.steamCd > 0) st.steamCd -= dt;
       const slow = st.frozenT > 0 ? 0.35 : Math.max(0.4, 1 - 0.08 * st.frz);
       if (this.flashT > 0) { this.flashT -= dt; spr.setTintFill(0xffffff); this.turret.setTintFill(0xffffff); }
-      else { const tint = st.frozenT > 0 ? 0x9fe8ff : st.burn > 0 ? 0xffc090 : this.invulnT > 0 && Math.floor((s.gameT || 0) * 1000 / 90) % 2 ? 0x888888 : this.active && this.armorLocked() ? 0x9fb8d0 : null; if (tint) { spr.setTint(tint); this.turret.setTint(tint); } else { spr.clearTint(); this.turret.clearTint(); } }
+      else { this.plateRed = this.plateNow(); const armour = this.active && (this.armorLocked() || this.plateRed >= 0.15); // armour tint wins over burn/freeze (retest 2)
+        const tint = armour ? 0x8fb0d0 : st.frozenT > 0 ? 0x9fe8ff : st.burn > 0 ? 0xffc090 : this.invulnT > 0 && Math.floor((s.gameT || 0) * 1000 / 90) % 2 ? 0x888888 : null; if (tint) { spr.setTint(tint); this.turret.setTint(tint); } else { spr.clearTint(); this.turret.clearTint(); } }
       spr.setDepth(spr.y + (spr.skin ? spr.skin.lift : 52)); this.turret.setDepth(spr.depth + 1);
       this.animate(dt);
       const tx = spr.x + 8, ty = spr.y - 6;
@@ -83,6 +92,9 @@
       const aim = Math.atan2(p.y - ty, p.x - tx);
       if (!this.active) { this.turret.setRotation(this.turretAng); return; }
       this.phaseT += dt; // game time in the current phase (装甲锁, N1)
+      const lk = this.armorLocked(); // big on-boss hint while the lock holds HP (esp. phase 3 at 1 HP)
+      this.lockTxt.setVisible(lk).setPosition(this.x, this.y - 130).setDepth(2000);
+      if (lk) this.lockTxt.setText(`装甲锁定 ${Math.ceil(this.armorLeft())}s` + (this.phase === 3 ? ' 后可击毁' : ' 后进入下一阶段'));
       if (this.invulnT > 0) { this.invulnT -= dt; spr.setVelocity(0, spr.y < B.homeY ? Math.min(80, (B.homeY - spr.y) * 3) : 0); /* keep easing down off the HUD while invulnerable */ this.turret.setRotation(this.turretAng); return; }
       // turret tracking (slower while the cannon is locked)
       const turnRate = (this.cannonTele ? 0 : 1.6) * slow * dt;
@@ -136,8 +148,9 @@
           this.onActFrame('deploy', 2, () => { s.layMine(this.spr.x - 70 * this.dir + Phaser.Math.Between(-20, 20), this.spr.y + Phaser.Math.Between(-30, 30)); if (Math.random() < 0.5) s.layMine(Phaser.Math.Clamp(px + Phaser.Math.Between(-120, 120), 60, DK.W - 60), Phaser.Math.Clamp(py + Phaser.Math.Between(-120, 120), 60, DK.H - 60), true); });
         }
         if (this.t.minion <= 0) {
-          this.t.minion = 7; this.doAct('deploy', 0.75);
+          this.t.minion = 11; this.doAct('deploy', 0.75);
           this.onActFrame('deploy', 2, () => {
+            if (this.phase !== 2 || !this.alive) return; // deploy frame landed after the switch to phase 3
             const alive = s.enemies.getChildren().filter(e => e.alive).length;
             for (let i = 0; i < Math.min(2, B.minionMax - alive); i++) s.spawnWithTelegraph(Math.random() < 0.6 ? 'charger' : 'rifle', Phaser.Math.Clamp(this.spr.x + (i ? 110 : -110), 80, DK.W - 80), Phaser.Math.Clamp(this.spr.y + 90, 80, DK.H - 80));
           });
