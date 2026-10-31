@@ -51,14 +51,16 @@ window.DK = window.DK || {};
 
   // ---- boss 铁砧
   DK.BOSS = {
-    name: '铁砧', hp: 1500, phase2At: 1000, phase3At: 500, contact: 20, radius: 58,
+    name: '铁砧', hp: 3000, phase2At: 2000, phase3At: 1000, contact: 20, radius: 58,
     cannonDmg: 22, cannonSpeed: 620, cannonTele: 0.9,
     mgDmg: 5, mgSpeed: 300,
     mineDmg: 20, mineMax: 8, minionMax: 4,
     ringDmg: 8, ringSpeed: 135, ringCount: 26, ringGap: 4, ringEvery: 0.95,
     phaseInvuln: 1.6,
     // sprite top ≈ y − 162 (640x512 frame × 0.45, feet anchor): keep y ≥ minY so the tank + barrage smoke stay under the HUD
-    dpsSoftCap: 30, overCapMul: 0.2, // see Boss.softCap (review P2-2: MG+burn was under the 60 s floor)
+    // 装甲锁 (N1): each phase must last at least phaseMinT[phase-1] s of GAME time; until then HP can't drop past
+    // the next phase line (phase 3: past 1). Visible: steel tint, "装甲 Xs" on the bar + float text. Replaces the old hidden DPS soft cap.
+    phaseMinT: [18, 19, 24],
     homeY: 195, minY: 178, p3X: 480, p3Y: 215, p2MinY: 205
   };
 
@@ -81,8 +83,8 @@ window.DK = window.DK || {};
 
   // ---- reward pool (房间清完三选一)
   DK.REWARDS = [
-    { id: 'ammo_burn',   name: '燃烧弹',   icon: 'icon_burn',    desc: '30%×武器系数 点燃\n每秒4伤，持续3秒，最多3层', can: r => !r.ammoTypes.includes('burn') },
-    { id: 'ammo_freeze', name: '冰冻弹',   icon: 'icon_freeze',  desc: '35%×武器系数 叠冰\n每层减速15%，4层冻结1.5秒', can: r => !r.ammoTypes.includes('freeze') },
+    { id: 'ammo_burn',   name: '燃烧弹',   icon: 'icon_burn',    desc: '30% 点燃\n每秒4伤，持续3秒，最多3层', can: r => !r.ammoTypes.includes('burn') },
+    { id: 'ammo_freeze', name: '冰冻弹',   icon: 'icon_freeze',  desc: '35% 叠冰\n每层减速15%，4层冻结1.5秒', can: r => !r.ammoTypes.includes('freeze') },
     { id: 'ammo_split',  name: '分裂弹',   icon: 'icon_split',   desc: '命中后裂成3颗\n各35%伤害', can: r => !r.ammoTypes.includes('split') },
     { id: 'weapon_mg',   name: '机枪',     icon: 'icon_mg',      desc: '6伤 10发/秒 弹匣40\n按 1/2 或滚轮切换', can: r => !r.weapons.includes('mg') },
     { id: 'mod_bigcal',  name: '大口径',   icon: 'icon_mod',     desc: '伤害 +40%\n射速 -25%', can: r => !r.mods.bigcal },

@@ -16,12 +16,12 @@
       this.dir = 1; this.cannonTele = null; this.ringOff = 0; this.flashT = 0;
       this.st = { burn: 0, burnT: 0, burnTick: 0, frz: 0, frozenT: 0, immuneT: 0, steamCd: 0 };
       this.radius = B.radius; this.x0 = x;
-      this.startTime = 0;
+      this.startTime = 0; this.phaseT = 0; this.armorHits = 0;
     }
     get x() { return this.spr.x; } get y() { return this.spr.y; }
     setPhase(n) {
       if (n <= this.phase) return;
-      const s = this.scene; this.phase = n; this.invulnT = DK.BOSS.phaseInvuln; this.cannonTele = null;
+      const s = this.scene; this.phase = n; this.phaseT = 0; this.invulnT = DK.BOSS.phaseInvuln; this.cannonTele = null;
       s.cameras.main.shake(400, 0.01); DK.sfx(s, 'explosion_large');
       s.explode(this.x + Phaser.Math.Between(-50, 50), this.y + Phaser.Math.Between(-30, 30), 50, 0, { src: 'fx', visualOnly: true });
       DK.banner(s, n === 2 ? '第二阶段 · 补充兵员 / 铺设地雷' : '第三阶段 · 履带损坏 · 全方位弹幕', { color: '#ff5a4e', size: 28, dur: 1800 });
@@ -35,25 +35,31 @@
         if (s.mines) { s.mines.slice().forEach(m => { if (m.active) { s.spark && s.spark(m.x, m.y, 0xffe08a); m.destroy(); } }); s.mines.length = 0; }
       }
     }
-    // Armour plating: damage above B.dpsSoftCap within any rolling 1 s window only counts B.overCapMul.
-    // Keeps BRIEF's 1500 HP while holding every loadout (pistol … MG + burn) in the 60–120 s window (review P2-2).
-    softCap(amount) {
-      const B = DK.BOSS, now = this.scene.time.now; if (!B.dpsSoftCap) return amount;
-      const w = this._dmgWin || (this._dmgWin = []);
-      while (w.length && now - w[0][0] > 1000) w.shift();
-      const recent = w.reduce((a, e) => a + e[1], 0), under = Math.max(0, Math.min(amount, B.dpsSoftCap - recent));
-      const eff = under + (amount - under) * B.overCapMul;
-      w.push([now, eff]); return eff;
+    // 装甲锁 (N1): HP floor while the current phase is younger than DK.BOSS.phaseMinT (game time, this.phaseT)
+    armorFloor() {
+      const B = DK.BOSS, g = (B.phaseMinT || [])[this.phase - 1];
+      if (!g || this.phaseT >= g) return null;
+      return this.phase === 1 ? B.phase2At + 1 : this.phase === 2 ? B.phase3At + 1 : 1;
     }
+    armorLeft() { const g = (DK.BOSS.phaseMinT || [])[this.phase - 1]; return g ? Math.max(0, g - this.phaseT) : 0; }
+    armorLocked() { const f = this.armorFloor(); return f != null && this.hp <= f; }
     damage(amount, info) {
       if (!this.alive) return 0;
       if (this.invulnT > 0 || !this.active) {
         DK.logDamage({ src: info.src, tgt: 'boss', amt: 0, note: 'invulnerable', hp: this.hp });
-        const s = this.scene, now = s.time.now; // visible "immune" feedback, throttled (review P2-3)
+        const s = this.scene, now = (s.gameT || 0) * 1000; // visible "immune" feedback, throttled on game time (review P2-3)
         if (this.active && now - (this._immT || 0) > 350) { this._immT = now; this.immuneShown = (this.immuneShown || 0) + 1; DK.floatText(s, this.x + Phaser.Math.Between(-30, 30), this.y - 70, '免疫', '#b8c0c8', 16); s.spark && s.spark(this.x + Phaser.Math.Between(-40, 40), this.y - 20, 0xcfe8ff); }
         return 0;
       }
-      if (!info || info.src !== 'dbg') amount = this.softCap(amount); // __dbg.bossHp/win set HP exactly
+      const dbg = info && info.src === 'dbg';
+      if (dbg && amount >= this.hp) { this.hp = 0; this.alive = false; this.scene.onBossDead(this); return amount; } // __dbg.win(): one call, any phase (N3)
+      const floor = dbg ? null : this.armorFloor();
+      if (floor != null && this.hp - amount < floor) {
+        const s = this.scene, now = (s.gameT || 0) * 1000;
+        amount = Math.max(0, this.hp - floor); this.armorHits++;
+        if (now - (this._armT || 0) > 450) { this._armT = now; DK.floatText(s, this.x + Phaser.Math.Between(-30, 30), this.y - 80, '装甲 ' + Math.ceil(this.armorLeft()) + 's', '#9fd3ff', 16); s.spark && s.spark(this.x + Phaser.Math.Between(-40, 40), this.y - 20, 0x9fd3ff); }
+        if (amount <= 0) return 0;
+      }
       this.hp -= amount; this.flashT = 0.06;
       if (this.hp <= DK.BOSS.phase3At && this.phase < 3) { this.hp = Math.max(this.hp, 1); this.setPhase(3); }
       else if (this.hp <= DK.BOSS.phase2At && this.phase < 2) this.setPhase(2);
@@ -69,13 +75,14 @@
       if (st.steamCd > 0) st.steamCd -= dt;
       const slow = st.frozenT > 0 ? 0.35 : Math.max(0.4, 1 - 0.08 * st.frz);
       if (this.flashT > 0) { this.flashT -= dt; spr.setTintFill(0xffffff); this.turret.setTintFill(0xffffff); }
-      else { const tint = st.frozenT > 0 ? 0x9fe8ff : st.burn > 0 ? 0xffc090 : this.invulnT > 0 && Math.floor(s.time.now / 90) % 2 ? 0x888888 : null; if (tint) { spr.setTint(tint); this.turret.setTint(tint); } else { spr.clearTint(); this.turret.clearTint(); } }
+      else { const tint = st.frozenT > 0 ? 0x9fe8ff : st.burn > 0 ? 0xffc090 : this.invulnT > 0 && Math.floor((s.gameT || 0) * 1000 / 90) % 2 ? 0x888888 : this.active && this.armorLocked() ? 0x9fb8d0 : null; if (tint) { spr.setTint(tint); this.turret.setTint(tint); } else { spr.clearTint(); this.turret.clearTint(); } }
       spr.setDepth(spr.y + (spr.skin ? spr.skin.lift : 52)); this.turret.setDepth(spr.depth + 1);
       this.animate(dt);
       const tx = spr.x + 8, ty = spr.y - 6;
       this.turret.setPosition(tx, ty);
       const aim = Math.atan2(p.y - ty, p.x - tx);
       if (!this.active) { this.turret.setRotation(this.turretAng); return; }
+      this.phaseT += dt; // game time in the current phase (装甲锁, N1)
       if (this.invulnT > 0) { this.invulnT -= dt; spr.setVelocity(0, spr.y < B.homeY ? Math.min(80, (B.homeY - spr.y) * 3) : 0); /* keep easing down off the HUD while invulnerable */ this.turret.setRotation(this.turretAng); return; }
       // turret tracking (slower while the cannon is locked)
       const turnRate = (this.cannonTele ? 0 : 1.6) * slow * dt;

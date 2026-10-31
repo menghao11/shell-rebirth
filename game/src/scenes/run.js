@@ -578,12 +578,12 @@
       DK.meta.bossSeen = (DK.meta.bossSeen || 0) + 1; DK.saveMeta();
       this.time.delayedCall(1700, () => {
         const lines = DK.lines(first ? DK.story.boss_anvil.intro : DK.story.boss_anvil.intro_short);
-        this.dlg.show(lines, () => { this.state = 'boss'; b.active = true; b.startTime = this.time.now; this.bossStart = this.time.now; DK.banner(this, '铁砧 · 前线碾压者', { color: '#ff5a4e', size: 30 }); });
+        this.dlg.show(lines, () => { this.state = 'boss'; b.active = true; b.startTime = this.gameT; this.bossStart = this.gameT; DK.banner(this, '铁砧 · 前线碾压者', { color: '#ff5a4e', size: 30 }); });
       });
     }
     onBossDead(b) {
       this.state = 'won';
-      const secs = ((this.time.now - (this.bossStart || this.time.now)) / 1000).toFixed(1);
+      const secs = (this.gameT - (this.bossStart || this.gameT)).toFixed(1); // game time (N1)
       DK.logDamage({ src: 'boss', tgt: 'boss', amt: 0, note: 'boss defeated in ' + secs + 's' });
       this.eBullets.getChildren().forEach(x => x.active && x.disableBody(true, true));
       this.enemies.getChildren().slice().forEach(e => e.alive && this.killEnemy(e, 'boss_dead'));
@@ -666,9 +666,9 @@
       if (this.boss && this.boss.active && this.boss.alive) {
         const b = this.boss, bw = 420, x = DK.W / 2 - bw / 2, y = DK.touchMode ? 54 : DK.H - 36; // touch: top, clear of the thumb buttons
         g.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, bw + 4, 14);
-        g.fillStyle(b.invulnT > 0 ? 0x888888 : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
+        const locked = b.armorLocked(); g.fillStyle(b.invulnT > 0 ? 0x888888 : locked ? 0x7fa8cc : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
         g.fillStyle(0xffffff, 0.8).fillRect(x + bw * DK.BOSS.phase2At / b.maxHp, y - 2, 2, 14).fillRect(x + bw * DK.BOSS.phase3At / b.maxHp, y - 2, 2, 14);
-        h.boss.setText(`铁砧  ${Math.ceil(b.hp)} / ${b.maxHp}   阶段 ${b.phase}`).setVisible(true);
+        h.boss.setText(`铁砧  ${Math.ceil(b.hp)} / ${b.maxHp}   阶段 ${b.phase}` + (locked ? `   装甲 ${Math.ceil(b.armorLeft())}s` : '')).setVisible(true);
       } else h.boss.setVisible(false);
       // interact prompt
       const it = !this.isPaused() && this.nearInteract();
