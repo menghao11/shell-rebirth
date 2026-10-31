@@ -138,11 +138,13 @@
     setupControls() {
       if (DK.touchMode) {
         this.touch = new DK.TouchControls(this, [
-          { id: 'dash', label: '冲刺', x: DK.W - 70, y: DK.H - 80, r: 42 },
-          { id: 'grenade', label: '手雷', x: DK.W - 165, y: DK.H - 52, r: 32 },
-          { id: 'reload', label: '换弹', x: DK.W - 60, y: DK.H - 180, r: 28 },
-          { id: 'swap', label: '切枪', x: DK.W - 130, y: DK.H - 140, r: 26 },
-          { id: 'act', label: '互动', x: DK.W - 250, y: DK.H - 44, r: 30, hidden: true }
+          // right thumb rests on 开火; the others sit in an arc around it with ≥ 20 px gaps (r ≥ 1.5× the old sizes)
+          { id: 'fire', label: '开火', x: DK.W - 120, y: DK.H - 130, r: 82, kind: 'fire' },
+          { id: 'dash', label: '冲刺', x: DK.W - 285, y: DK.H - 86, r: 60 },
+          { id: 'grenade', label: '手雷', x: DK.W - 262, y: DK.H - 232, r: 50 },
+          { id: 'reload', label: '换弹', x: DK.W - 110, y: DK.H - 300, r: 44 },
+          { id: 'swap', label: '切枪', x: DK.W - 228, y: DK.H - 362, r: 40 },
+          { id: 'act', label: '互动', x: DK.W - 425, y: DK.H - 72, r: 48, hidden: true }
         ]);
         this.touch.on('press', id => { if (id === 'act') this.tryInteract(); });
       }
@@ -632,10 +634,11 @@
       h.info = DK.txt(this, 20, 70, '', { fontSize: '13px', color: '#dddddd', stroke: '#000', strokeThickness: 3 }).setDepth(D + 1);
       h.room = DK.txt(this, DK.W / 2, 14, '', { fontSize: '14px', color: '#f2c14e', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setDepth(D + 1);
       h.scrap = DK.txt(this, DK.W - 20, 14, '', { fontSize: '15px', color: '#f2e6c9', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0).setDepth(D + 1);
-      h.boss = DK.txt(this, DK.W / 2, H - 52, '', { fontSize: '14px', color: '#ff8a7a', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(D + 1);
+      h.boss = DK.txt(this, DK.W / 2, DK.touchMode ? 78 : H - 52, '', { fontSize: '14px', color: '#ff8a7a', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(D + 1);
       h.prompt = DK.txt(this, 0, 0, '', { fontSize: '14px', color: '#ffffff', backgroundColor: '#000000aa', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(D + 2).setVisible(false);
-      h.pauseBtn = DK.button(this, DK.W - 40, 52, 56, 30, '暂停', () => this.togglePause(), { fontSize: 13, depth: D + 3 });
-      if (DK.god) h.god = DK.txt(this, DK.W - 20, 74, 'GOD', { fontSize: '12px', color: '#ff0' }).setOrigin(1, 0).setDepth(D + 1);
+      h.pauseBtn = DK.touchMode ? DK.button(this, DK.W - 58, 62, 92, 46, '暂停', () => this.togglePause(), { fontSize: 18, depth: D + 3 })
+        : DK.button(this, DK.W - 40, 52, 56, 30, '暂停', () => this.togglePause(), { fontSize: 13, depth: D + 3 });
+      if (DK.god) h.god = DK.txt(this, DK.W - 20, DK.touchMode ? 90 : 74, 'GOD', { fontSize: '12px', color: '#ff0' }).setOrigin(1, 0).setDepth(D + 1);
     }
     updateHUD() {
       const run = this.run, p = this.player, g = this.hudG, h = this.hud, w = p.weapon();
@@ -661,7 +664,7 @@
       h.scrap.setText(`废铁 ${run.scrap}   击杀 ${run.kills}`);
       // boss bar
       if (this.boss && this.boss.active && this.boss.alive) {
-        const b = this.boss, bw = 420, x = DK.W / 2 - bw / 2, y = DK.H - 36;
+        const b = this.boss, bw = 420, x = DK.W / 2 - bw / 2, y = DK.touchMode ? 54 : DK.H - 36; // touch: top, clear of the thumb buttons
         g.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, bw + 4, 14);
         g.fillStyle(b.invulnT > 0 ? 0x888888 : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
         g.fillStyle(0xffffff, 0.8).fillRect(x + bw * DK.BOSS.phase2At / b.maxHp, y - 2, 2, 14).fillRect(x + bw * DK.BOSS.phase3At / b.maxHp, y - 2, 2, 14);

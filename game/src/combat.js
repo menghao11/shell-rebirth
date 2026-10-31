@@ -156,6 +156,15 @@
           this.aimAng = Math.atan2(tc.aim.y, tc.aim.x); wantFire = true;
           const t = this.nearestEnemy(420); // light aim assist (±12°)
           if (t) { const a = Math.atan2(t.y - this.y, t.x - this.x); if (Math.abs(DK.angDiff(a, this.aimAng)) < 0.21) this.aimAng = a; }
+        } else if (tc.fireHeld) { // 开火 button: hold = fire; drag off its centre = manual aim, otherwise auto-aim
+          wantFire = true;
+          if (tc.fireAim.active) {
+            this.aimAng = Math.atan2(tc.fireAim.y, tc.fireAim.x);
+            const t = this.nearestEnemy(420); if (t) { const a = Math.atan2(t.y - this.y, t.x - this.x); if (Math.abs(DK.angDiff(a, this.aimAng)) < 0.21) this.aimAng = a; }
+          } else {
+            const t = this.nearestEnemy(DK.TOUCH.fireAssist);
+            if (t) this.aimAng = Math.atan2(t.y - this.y, t.x - this.x); else if (mx || my) this.aimAng = Math.atan2(my, mx);
+          }
         } else {
           const t = this.nearestEnemy(380);
           if (t) this.aimAng = Math.atan2(t.y - this.y, t.x - this.x);

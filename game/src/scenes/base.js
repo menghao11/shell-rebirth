@@ -65,10 +65,11 @@
       // HUD
       this.stat = DK.txt(this, 20, 14, '', { fontSize: '15px', color: '#f2e6c9', stroke: '#000', strokeThickness: 3, lineSpacing: 4 }).setDepth(950);
       this.prompt = DK.txt(this, 0, 0, '', { fontSize: '14px', color: '#fff', backgroundColor: '#000000aa', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(960).setVisible(false);
-      DK.button(this, W - 52, 24, 76, 32, '设置', () => this.openSettings(), { fontSize: 14, depth: 1000 });
+      if (DK.touchMode) DK.button(this, W - 62, 32, 100, 46, '设置', () => this.openSettings(), { fontSize: 18, depth: 1000 });
+      else DK.button(this, W - 52, 24, 76, 32, '设置', () => this.openSettings(), { fontSize: 14, depth: 1000 });
       if (!DK.touchMode) DK.txt(this, W / 2, H - 22, 'WASD 移动 · E 交谈 · ' + (this.painted ? '走到右下车库门出击' : '走进右侧大门出击') + ' · 战斗中：鼠标瞄准射击 / 空格冲刺 / 按住Q 手雷 / R 换弹', { fontSize: '13px', color: '#bbb', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(950);
       if (DK.touchMode) {
-        this.touch = new DK.TouchControls(this, [{ id: 'act', label: '交谈', x: W - 90, y: H - 90, r: 42, hidden: true }]);
+        this.touch = new DK.TouchControls(this, [{ id: 'act', label: '交谈', x: W - 120, y: H - 120, r: 64, hidden: true }]);
         this.touch.on('press', id => { if (id === 'act') this.interact(); });
       }
       const kb = this.input.keyboard;
