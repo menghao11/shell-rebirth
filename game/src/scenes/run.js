@@ -182,25 +182,48 @@
       Object.entries(spec).forEach(([type, n]) => { for (let i = 0; i < n; i++) this.time.delayedCall(i * 160, () => this.spawnWithTelegraph(type)); });
       if (this.wave > 0) DK.banner(this, `第 ${this.wave + 1} 波`, { size: 22, color: '#ffffff', dur: 900 });
     }
-    findSpawn(r) {
-      for (let t = 0; t < 40; t++) {
-        const x = Phaser.Math.Between(120, DK.W - 80), y = Phaser.Math.Between(70, DK.H - 70);
-        if (Math.hypot(x - this.player.x, y - this.player.y) < 240) continue;
-        if (!this.rectFree(x, y, r * 2, r * 2, 8)) continue;
+    // ---- arena containment: every enemy spawn point / position stays inside the walls (not in a wall, cover, barrel or the boss)
+    inArena(x, y, r) { const m = DK.WALL + (r || 0); return x >= m && x <= DK.W - m && y >= m && y <= DK.H - m; }
+    clampArena(x, y, r) { const m = DK.WALL + (r || 0) + 2; return { x: Phaser.Math.Clamp(x, m, DK.W - m), y: Phaser.Math.Clamp(y, m, DK.H - m) }; }
+    spawnOk(x, y, r) {
+      if (!this.inArena(x, y, r + 2) || !this.rectFree(x, y, r * 2, r * 2, 6)) return false;
+      const B = this.boss; if (B && B.alive && B.spr && B.spr.body) { const b = B.spr.body; if (x + r > b.x - 6 && x - r < b.right + 6 && y + r > b.y - 6 && y - r < b.bottom + 6) return false; }
+      return true;
+    }
+    findSpawn(r, nx, ny) {
+      if (nx != null) { // preferred point (e.g. boss adds): clamp it, then search rings around it
+        const c = this.clampArena(nx, ny, r);
+        for (let d = 0; d <= 240; d += 24) for (let k = 0; k < (d ? 12 : 1); k++) { const a = k / 12 * Math.PI * 2, p = this.clampArena(c.x + Math.cos(a) * d, c.y + Math.sin(a) * d, r); if (this.spawnOk(p.x, p.y, r)) return p; }
+      }
+      const m = DK.WALL + r + 4;
+      for (let pass = 0; pass < 2; pass++) for (let t = 0; t < 40; t++) {
+        const x = Phaser.Math.Between(Math.max(120, m), DK.W - m - 20), y = Phaser.Math.Between(m + 20, DK.H - m - 20);
+        if (!pass && Math.hypot(x - this.player.x, y - this.player.y) < 240) continue;
+        if (!this.spawnOk(x, y, r)) continue;
         if (this.hostage && Math.hypot(x - this.hostage.x, y - this.hostage.y) < 50) continue;
         return { x, y };
       }
-      return { x: DK.W - 120, y: Phaser.Math.Between(80, DK.H - 80) };
+      for (let x = DK.W - m - 20; x > m; x -= 30) for (let y = m + 20; y < DK.H - m - 20; y += 30) if (this.spawnOk(x, y, r)) return { x, y }; // deterministic scan
+      return this.clampArena(DK.W / 2, DK.H / 2, r);
     }
     spawnWithTelegraph(type, x, y) {
-      if (x == null) ({ x, y } = this.findSpawn(DK.ENEMIES[type].radius + 4));
+      const r = DK.ENEMIES[type].radius + 4;
+      ({ x, y } = x == null || !this.spawnOk(x, y, r) ? this.findSpawn(r, x, y) : { x, y });
       this.pending++;
       const ring = this.add.circle(x, y, 22, 0xff3030, 0.25).setStrokeStyle(2, 0xff3030).setDepth(5);
       this.tweens.add({ targets: ring, scale: 0.4, alpha: 0.9, duration: 650, onComplete: () => {
         ring.destroy(); this.pending--;
         if (this.state === 'dead' || this.state === 'won') return;
+        if (!this.spawnOk(x, y, r)) ({ x, y } = this.findSpawn(r, x, y)); // re-check: the boss may have moved onto the ring
         DK.spawnEnemy(this, type, x, y);
       } });
+    }
+    containEnemies() { // hard guard: Arcade skips wall separation when an overlap is deeper than one frame's motion (crowd/boss push, knockback), so pull escapees back
+      this.enemies.getChildren().forEach(e => {
+        if (!e.alive || !e.body) return; const r = e.cfg.radius;
+        if (this.inArena(e.x, e.y, r - 3)) return;
+        const p = this.clampArena(e.x, e.y, r); e.body.reset(p.x, p.y); e.stuckT = 0; this.escapes = (this.escapes || 0) + 1;
+      });
     }
     targets() {
       const t = this.enemies.getChildren().filter(e => e.alive);
@@ -704,6 +727,7 @@
       const g = this.fxG; g.clear();
       if (!paused) {
         this.enemies.getChildren().slice().forEach(e => e.alive && DK.updateEnemy(this, e, dt));
+        this.containEnemies();
         if (this.boss) this.boss.update(dt);
         // bullet lifetimes
         const now = this.time.now;
