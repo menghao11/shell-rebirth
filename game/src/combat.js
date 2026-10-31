@@ -236,9 +236,27 @@
       this.scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
     }
     invulnerable() { return this.god || DK.god || this.dashT > 0 || this.iframes > 0 || this.dead; }
-    drawAim(firing) { // grenade-style aim guide: row of bright dots (dark outline) shrinking/fading to a target ring; gold while firing
+    aimTarget() { // first thing a bullet fired now along aimAng would hit: a damageable enemy (in reach, no wall/cover/barrel first, not a heavy's shield face)?
+      const s = this.scene, c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y, w = DK.WEAPONS[s.run ? s.run.weapon : 'pistol'] || DK.WEAPONS.pistol;
+      let best = Math.min(DK.W + DK.H, (w.speed || 760) * 1.05), hit = null;
+      const rayBox = b => { if (!b || !b.enable && b.enable !== undefined) return; let t0 = 0, t1 = best; // slab test vs an AABB body
+        for (const [o, d, lo, hi] of [[ox, c, b.x, b.x + b.width], [oy, sn, b.y, b.y + b.height]]) {
+          if (Math.abs(d) < 1e-6) { if (o < lo || o > hi) return; continue; }
+          let a1 = (lo - o) / d, a2 = (hi - o) / d; if (a1 > a2) [a1, a2] = [a2, a1]; t0 = Math.max(t0, a1); t1 = Math.min(t1, a2); if (t0 > t1) return; }
+        if (t0 > 0 && t0 < best) { best = t0; hit = null; } };
+      for (const g of [s.walls, s.covers, s.barrels]) if (g && g.getChildren) g.getChildren().forEach(o => o.active !== false && rayBox(o.body));
+      const tryHit = (x, y, r, obj) => { const dx = x - ox, dy = y - oy, t = dx * c + dy * sn; if (t <= 0 || t >= best) return; const perp = Math.abs(dx * sn - dy * c); if (perp < r + 4) { best = t; hit = obj; } };
+      if (s.enemies) s.enemies.getChildren().forEach(e => { if (e.active && e.alive) tryHit(e.x, e.y, (e.cfg && e.cfg.radius) || 14, e); });
+      const bo = s.boss; if (bo && bo.alive && bo.spr && bo.spr.active) tryHit(bo.spr.x, bo.spr.y, (bo.spr.body ? bo.spr.body.width / 2 : 50), bo.spr);
+      if (!hit) return null;
+      if (hit.isBoss) { const B = hit.bossRef; return B && B.active && !(B.invulnT > 0) ? hit : null; }
+      if (hit.etype === 'heavy' && Math.abs(DK.angDiff(this.aimAng + Math.PI, hit.facing)) < Phaser.Math.DegToRad(hit.cfg.shieldArc)) return null;
+      return hit;
+    }
+    drawAim(firing) { // grenade-style aim guide: row of bright dots (dark outline) shrinking/fading to a target ring; light red on a damageable target, gold while firing
       const g = this.aimG; g.clear(); if (this.dead || !this.canFight) return;
-      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, col = firing ? 0xffd040 : 0xffffff, L = 250, n = 11;
+      this.aimHot = !!this.aimTarget();
+      const c = Math.cos(this.aimAng), sn = Math.sin(this.aimAng), ox = this.x, oy = this.y + 2, col = this.aimHot ? (firing ? 0xff8a78 : 0xff9e9e) : firing ? 0xffd040 : 0xffffff, L = 250, n = 11;
       g.setDepth(this.spr.depth + 2);
       for (let i = 0; i < n; i++) {
         const k = i / (n - 1), d = 32 + k * (L - 52), x = ox + c * d, y = oy + sn * d, r = 5.5 - k * 3, a = 1 - k * 0.55;
