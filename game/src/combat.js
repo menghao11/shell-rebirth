@@ -103,7 +103,8 @@
       const fps = (a && a.fps) || 14, delay = real ? 3 * 1000 / fps : 0;
       this.throwT = real ? (a.frame_count || 6) / fps : 0.35;
       if (real) DK.anim(this.spr, 'throw', { restart: true });
-      s.time.delayedCall(delay, () => { if (this.dead || !s.scene.isActive()) return; const t = this.grenadeTarget(); s.throwGrenade(this.x, this.y - 10, t.x, t.y); });
+      const t = this.grenadeTarget(); this.lastGrenade = { x: t.x, y: t.y }; // landing point locked at release; later aim/move/facing changes don't matter
+      s.time.delayedCall(delay, () => { if (this.dead || !s.scene.isActive()) return; s.throwGrenade(this.x, this.y - 10, t.x, t.y); });
     }
     // depth sorts by the feet line so the 3/4 view overlaps correctly
     feetY() { return this.spr.y + (this.spr.skin ? this.spr.skin.lift : DK.PLAYER.radius); }
@@ -274,7 +275,7 @@
       const bo = s.boss; if (bo && bo.alive && bo.spr && bo.spr.active) tryHit(bo.spr.x, bo.spr.y, (bo.spr.body ? bo.spr.body.width / 2 : 50), bo.spr);
       if (!hit) return null;
       if (hit.isBoss) { const B = hit.bossRef; return B && B.active && !(B.invulnT > 0) ? hit : null; }
-      if (hit.etype === 'heavy' && Math.abs(DK.angDiff(this.aimAng + Math.PI, hit.facing)) < Phaser.Math.DegToRad(hit.cfg.shieldArc)) return null;
+      if (hit.etype === 'heavy' && DK.shieldBlocks(hit, c, sn, ox + c * best, oy + sn * best)) return null;
       return hit;
     }
     drawAim(firing, precise) { // precision (dragging 瞄准 / holding the mouse): grenade-style dotted line, light red on a damageable target, blue-grey while the burst recharges; otherwise a short facing stub (touch)

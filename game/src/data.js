@@ -48,7 +48,7 @@ window.DK = window.DK || {};
     charger: { name: '冲锋兵', hp: 30,  speed: 150, radius: 14, contact: 0,  fuse: 0.45, boomDmg: 15, boomRadius: 58, scrap: 1 },
     rifle:   { name: '步枪兵', hp: 40,  speed: 85,  radius: 14, contact: 8,  range: [200, 320], burst: 3, burstGap: 0.12, cd: 2.2, dmg: 5, bulletSpeed: 300, scrap: 1 },
     sniper:  { name: '狙击手', hp: 35,  speed: 70,  radius: 13, contact: 8,  aim: 1.5, lockAt: 1.15, cd: 1.3, dmg: 20, bulletSpeed: 950, scrap: 2 },
-    heavy:   { name: '重装兵', hp: 100, speed: 55,  radius: 20, contact: 12, shieldArc: 45, turn: 70, cd: 3.0, dmg: 6, bulletSpeed: 220, scrap: 4 }
+    heavy:   { name: '重装兵', hp: 100, speed: 55,  radius: 20, contact: 12, shieldArc: 40, turn: 70, cd: 3.0, dmg: 6, bulletSpeed: 220, scrap: 4 }
   };
   DK.BARREL = { hp: 20, radius: 82, dmg: 35 };
 
