@@ -1,4 +1,17 @@
 // Enemies: 冲锋兵 charger / 步枪兵 rifle / 狙击手 sniper / 重装兵 heavy
+(function () {
+  // 重装兵 shield: the side-view art only faces left or right (flipX), so the shield covers exactly that side —
+  // a front arc of ±shieldArc around 0 or π. Blocks only when the hit really comes from the front: the projectile's
+  // own travel direction (curved/aim-assist bullets included) points into the shield AND the impact is on the shield side.
+  // Anything else (sides, back, grenades, burn/freeze ticks, 爆环, fragments from behind) damages.
+  DK.shieldDir = e => (Math.cos(e.facing) < 0 ? Math.PI : 0);
+  DK.shieldBlocks = (e, vx, vy, x, y) => {
+    if (!e || e.etype !== 'heavy' || !e.alive || (!vx && !vy)) return false;
+    const d = DK.shieldDir(e), from = Math.atan2(-vy, -vx);
+    if (Math.abs(DK.angDiff(from, d)) > Phaser.Math.DegToRad(e.cfg.shieldArc)) return false;
+    return (x - e.x) * Math.cos(d) > -4; // impact on the shield half, not behind it
+  };
+})();
 (function (DK) {
   const PI2 = Math.PI * 2;
   DK.spawnEnemy = function (scene, type, x, y, extra) {
@@ -141,7 +154,7 @@
             e.t = c.cd + Math.random() * 0.8;
           }
         }
-        e.shieldImg.setPosition(e.x + Math.cos(e.facing) * (c.radius + 6), e.y + Math.sin(e.facing) * (c.radius + 6)).setRotation(e.facing).setDepth(e.y + 2);
+        const sd = DK.shieldDir(e); e.shieldImg.setPosition(e.x + Math.cos(sd) * (c.radius + 6), e.y).setRotation(sd).setDepth(e.y + 2); // fallback art: same side as the flipped sprite
         break;
       }
     }

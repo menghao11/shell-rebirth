@@ -285,10 +285,9 @@
       if (b.ignore === e) return;
       const isBoss = !!e.isBoss;
       if (!isBoss && !e.alive) return;
-      // 重装兵 shield: blocks bullets arriving within ±shieldArc of its facing
+      // 重装兵 shield: blocks only bullets travelling into its front (DK.shieldBlocks, enemies.js)
       if (e.etype === 'heavy') {
-        const from = Math.atan2(-b.body.velocity.y, -b.body.velocity.x);
-        if (Math.abs(DK.angDiff(from, e.facing)) < Phaser.Math.DegToRad(e.cfg.shieldArc)) {
+        if (DK.shieldBlocks(e, b.body.velocity.x, b.body.velocity.y, b.x, b.y)) { // front-only: real travel direction + impact side
           this.shieldBlocked(e, b); DK.sfx(this, 'shield_block', { minGap: 70 });
           DK.logDamage({ src: b.src, tgt: 'heavy', amt: 0, note: 'shield', hp: e.hp });
           this.killBullet(b); return;
@@ -447,8 +446,9 @@
     shieldBlocked(e, b) {
       this.spark(b.x, b.y, 0xbfe0ff, 12); this.blockCount = (this.blockCount || 0) + 1;
       const r = e.cfg.radius + 12, a = Phaser.Math.DegToRad(e.cfg.shieldArc), g = this.add.graphics().setDepth(e.y + 3);
-      g.lineStyle(5, 0xdff2ff, 1).beginPath().arc(e.x, e.y, r, e.facing - a, e.facing + a).strokePath();
-      g.lineStyle(2, 0x7fc4ff, 0.9).beginPath().arc(e.x, e.y, r + 5, e.facing - a, e.facing + a).strokePath();
+      const sd = DK.shieldDir(e);
+      g.lineStyle(5, 0xdff2ff, 1).beginPath().arc(e.x, e.y, r, sd - a, sd + a).strokePath();
+      g.lineStyle(2, 0x7fc4ff, 0.9).beginPath().arc(e.x, e.y, r + 5, sd - a, sd + a).strokePath();
       this.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
       e.setTint(0x9fd3ff); e.shieldImg && e.shieldImg.setTint(0xffffff);
       this.time.delayedCall(90, () => { if (e.active) e.clearTint(); if (e.shieldImg && e.shieldImg.active) e.shieldImg.clearTint(); });
