@@ -111,8 +111,9 @@
     animate(moving) {
       const spr = this.spr; if (!spr.realSkin) return;
       const mg = this.run && this.run.weapon === 'mg';
+      // moving always shows the run cycle (legs keep walking while auto-fire / aim / burst run); the shoot pose is for standing still
       const st = this.dead ? 'death' : this.dashT > 0 ? 'dash' : this.throwT > 0 ? 'throw' : this.hurtT > 0 ? 'hurt'
-        : this.reloadT > 0 ? 'reload' : this.shootT > 0 ? (mg ? 'shoot_mg' : 'shoot') : moving ? 'run' : 'idle';
+        : moving ? 'run' : this.reloadT > 0 ? 'reload' : this.shootT > 0 ? (mg ? 'shoot_mg' : 'shoot') : 'idle';
       DK.anim(spr, st);
     }
     swap(dir) {
@@ -145,7 +146,7 @@
       if (this.dead) { spr.setVelocity(0); this.animate(false); return; }
       if (this.paused() || (s.inputBlockUntil && s.time.now < s.inputBlockUntil)) { spr.setVelocity(0); this.drain(); this.grenadeAim = false; this.precise = false; this.animate(false); if (this.aimG) this.aimG.clear(); return; }
       const k = this.keys, tc = this.scene.touch, mouse = s.input.mousePointer;
-      const { mx, my } = this.input();
+      const { mx, my } = this.input(); this.moving = !!(mx || my);
       if (mx || my) { const l = Math.hypot(mx, my); this.moveDir = { x: mx / l, y: my / l }; }
       // ---- aim (user-approved scheme)
       // default: always firing in combat, along the 瞄准 stick while it is pushed, otherwise along the walk/facing direction
@@ -186,7 +187,7 @@
       if ((DK.ART.player || {}).flip !== false) spr.setFlipX(left);
       spr.setAlpha(this.iframes > 0 && !this.dashT && Math.floor(s.time.now / 70) % 2 ? 0.5 : 1);
       this.gun.setPosition(spr.x + Math.cos(this.aimAng) * 6, spr.y + 6 + Math.sin(this.aimAng) * 6).setRotation(this.aimAng).setFlipY(left);
-      this.animate(!!(mx || my));
+      this.animate(this.moving);
       if (this.aimG) this.drawAim(wantFire, precise);
       if (!this.canFight || !this.run) return;
       // ---- weapon
@@ -238,7 +239,7 @@
       o = o || {};
       const s = this.scene, r = this.run, base = o.ang != null ? o.ang : this.aimAng;
       this.shots++; this.shootT = w.id === 'mg' ? 0.15 : 0.3;
-      if (w.id !== 'mg' && this.spr.realSkin && this.dashT <= 0 && this.reloadT <= 0) DK.anim(this.spr, 'shoot', { restart: true, startFrame: 1 }); // hero_shoot fires on 01
+      if (w.id !== 'mg' && this.spr.realSkin && this.dashT <= 0 && this.reloadT <= 0 && !this.moving) DK.anim(this.spr, 'shoot', { restart: true, startFrame: 1 }); // hero_shoot fires on 01; no shoot-pose restart while walking
       if (!o.burst) this.fireCd = Math.max(this.fireCd, -1 / w.rate) + 1 / w.rate; // accumulate so 4/s and 10/s are exact (review P1-2)
       let dmg = w.dmg, crit = Math.random() < w.crit || (r.mods.fifth && this.shots % 5 === 0);
       if (crit) dmg *= DK.PLAYER.critMul;
