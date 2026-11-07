@@ -14,6 +14,27 @@
     fps: { target: 60 },
     scene: [DK.BootScene, DK.BaseScene, DK.RunScene, DK.ResultScene]
   });
+  // Adaptive render resolution: only sustained low fps (foreground, active gameplay), never gameplay size.
+  DK.renderLocked = localStorage.getItem('dk_render_lock') === '1';
+  DK.renderHistory = []; let lowFor = 0, graceUntil = performance.now() + 5000;
+  DK.setRenderScale = function (next) {
+    next = Math.max(1, Math.min(2, next)); if (next === DK.R) return;
+    const prev = DK.R; DK.R = next;
+    DK.game.scale.resize(DK.W * next, DK.H * next);
+    DK.game.scene.getScenes(true).forEach(scene => {
+      scene.cameras.main.setSize(DK.W * next, DK.H * next).setOrigin(0, 0).setZoom(next).setScroll(0, 0);
+    });
+    DK.renderHistory.push({ from: prev, to: next, fps: DK.game.loop.actualFps });
+    lowFor = 0; graceUntil = performance.now() + 3000;
+    if (DK.layout) DK.layout();
+  };
+  DK.setRenderLock = function (on) { DK.renderLocked = !!on; localStorage.setItem('dk_render_lock', on ? '1' : '0'); lowFor = 0; };
+  DK.game.events.on('poststep', (time, delta) => {
+    const scene = DK.current;
+    if (DK.renderLocked || DK.R <= 1 || document.hidden || performance.now() < graceUntil || !scene || (scene.isPaused && scene.isPaused())) { lowFor = 0; return; }
+    lowFor = DK.game.loop.actualFps < 40 ? lowFor + Math.min(delta || 16.7, 250) : 0;
+    if (lowFor >= 3000) DK.setRenderScale(DK.R > 1.5 ? 1.5 : 1);
+  });
   // ---- screen fit: size #game (and the portrait touch pad) from the *visual* viewport minus safe-area insets,
   // then let Phaser FIT/CENTER_BOTH scale 960x540 inside it. Re-run on rotation and Safari toolbar show/hide.
   DK.layout = function () {

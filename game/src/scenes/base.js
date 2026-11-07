@@ -141,6 +141,7 @@
       objs.push(this.add.rectangle(W / 2, H / 2, W, H, 0, 0.75).setScrollFactor(0).setDepth(1100).setInteractive());
       objs.push(DK.txt(this, W / 2, 120, '设置', { fontSize: '34px', fontStyle: 'bold', color: '#f2c14e' }).setOrigin(0.5).setDepth(1101));
       objs.push(...DK.volumeControls(this, W / 2, 210, 1102));
+      objs.push(DK.button(this, W / 2 + 300, 340, 250, 44, '分辨率：' + (DK.renderLocked ? '锁定' : '自动') + ' ' + DK.R, () => { DK.setRenderLock(!DK.renderLocked); close(); this.openSettings(); }, { depth: 1102, fontSize: 16 }));
       objs.push(DK.button(this, W / 2, 340, 220, 44, '重看开场剧情', () => { close(); this.dlg.show(DK.lines(DK.story.intro)); }, { depth: 1102, fontSize: 16 }));
       objs.push(DK.button(this, W / 2, 396, 220, 44, '重玩教学关', () => { close(); this.startTutorial('replay'); }, { depth: 1102, fontSize: 16 }));
       objs.push(DK.button(this, W / 2, 456, 220, 44, '关闭', () => close(), { depth: 1102 }));
