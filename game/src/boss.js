@@ -22,7 +22,7 @@
     get x() { return this.spr.x; } get y() { return this.spr.y; }
     setPhase(n) {
       if (n <= this.phase) return;
-      const s = this.scene; this.phase = n; this.phaseT = 0; this.invulnT = DK.BOSS.phaseInvuln; this.cannonTele = null;
+      const s = this.scene; this.phase = n; this.phaseT = 0; this.invulnT = this.cfg.phaseInvuln; this.cannonTele = null;
       s.cameras.main.shake(400, 0.01); DK.sfx(s, 'explosion_large');
       s.explode(this.x + Phaser.Math.Between(-50, 50), this.y + Phaser.Math.Between(-30, 30), 50, 0, { src: 'fx', visualOnly: true });
       DK.banner(s, n === 2 ? '第二阶段 · 补充兵员 / 铺设地雷' : '第三阶段 · 履带损坏 · 全方位弹幕', { color: '#ff5a4e', size: 28, dur: 1800 });
@@ -37,19 +37,19 @@
         if (s.mines) { s.mines.slice().forEach(m => { if (m.active) { s.spark && s.spark(m.x, m.y, 0xffe08a); m.destroy(); } }); s.mines.length = 0; }
       }
     }
-    // 装甲锁 (N1): HP floor while the current phase is younger than DK.BOSS.phaseMinT (game time, this.phaseT)
+    // 装甲锁 (N1): HP floor while the current phase is younger than this.cfg.phaseMinT (game time, this.phaseT)
     armorFloor() {
-      const B = DK.BOSS, g = (B.phaseMinT || [])[this.phase - 1];
+      const B = this.cfg, g = (B.phaseMinT || [])[this.phase - 1];
       if (!g || this.phaseT >= g) return null;
       return this.phase === 1 ? B.phase2At + 1 : this.phase === 2 ? B.phase3At + 1 : 1;
     }
-    armorLeft() { const g = (DK.BOSS.phaseMinT || [])[this.phase - 1]; return g ? Math.max(0, g - this.phaseT) : 0; }
+    armorLeft() { const g = (this.cfg.phaseMinT || [])[this.phase - 1]; return g ? Math.max(0, g - this.phaseT) : 0; }
     armorLocked() { const f = this.armorFloor(); return f != null && this.hp <= f; }
     // 装甲板: exponential average of raw DPS (game time); returns the multiplier for a hit of `amount`
-    plateDecay() { const B = DK.BOSS, now = this.scene.gameT || 0, dt = now - (this.plateT || 0); this.plateT = now; this.plateD = (this.plateD || 0) * Math.exp(-Math.max(0, dt) / B.plateTau); return this.plateD; }
-    plateCurve(d) { const B = DK.BOSS; return d <= B.plateDps ? 1 : Math.pow(B.plateDps / d, 1 - B.platePow); }
-    plateMul(amount) { if (!DK.BOSS.plateDps) return 1; this.plateDecay(); this.plateD += amount / DK.BOSS.plateTau; return this.plateCurve(this.plateD); }
-    plateNow() { if (!DK.BOSS.plateDps) return 0; return 1 - this.plateCurve(this.plateDecay()); }
+    plateDecay() { const B = this.cfg, now = this.scene.gameT || 0, dt = now - (this.plateT || 0); this.plateT = now; this.plateD = (this.plateD || 0) * Math.exp(-Math.max(0, dt) / B.plateTau); return this.plateD; }
+    plateCurve(d) { const B = this.cfg; return d <= B.plateDps ? 1 : Math.pow(B.plateDps / d, 1 - B.platePow); }
+    plateMul(amount) { if (!this.cfg.plateDps) return 1; this.plateDecay(); this.plateD += amount / this.cfg.plateTau; return this.plateCurve(this.plateD); }
+    plateNow() { if (!this.cfg.plateDps) return 0; return 1 - this.plateCurve(this.plateDecay()); }
     damage(amount, info) {
       if (!this.alive) return 0;
       if (this.invulnT > 0 || !this.active) {
@@ -69,8 +69,8 @@
         if (amount <= 0) return 0;
       }
       this.hp -= amount; this.flashT = 0.06;
-      if (this.hp <= DK.BOSS.phase3At && this.phase < 3) { this.hp = Math.max(this.hp, 1); this.setPhase(3); }
-      else if (this.hp <= DK.BOSS.phase2At && this.phase < 2) this.setPhase(2);
+      if (this.hp <= this.cfg.phase3At && this.phase < 3) { this.hp = Math.max(this.hp, 1); this.setPhase(3); }
+      else if (this.hp <= this.cfg.phase2At && this.phase < 2) this.setPhase(2);
       if (this.hp <= 0) { this.hp = 0; this.alive = false; this.lockTxt.setVisible(false); this.scene.onBossDead(this); }
       return amount;
     }

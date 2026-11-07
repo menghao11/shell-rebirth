@@ -18,13 +18,15 @@
     const c = DK.ENEMIES[type], key = 'enemy_' + type;
     const e = scene.physics.add.sprite(x, y, key); DK.applySkin(e, key);
     DK.setCircleBody(e, c.radius); e.setCollideWorldBounds(true);
-    Object.assign(e, { isEnemy: true, etype: type, cfg: c, hp: c.hp, maxHp: c.hp, radius: c.radius, alive: true,
+    const hp = Math.round(c.hp * (DK.enemyHpMul ? DK.enemyHpMul(scene) : 1));
+    Object.assign(e, { isEnemy: true, etype: type, cfg: c, hp, maxHp: hp, radius: c.radius, alive: true,
       st: { burn: 0, burnT: 0, burnTick: 0, frz: 0, frozenT: 0, immuneT: 0, steamCd: 0 },
       t: Math.random() * 1.5, state: 'move', facing: 0, flashT: 0, side: Math.random() < 0.5 ? 1 : -1, stuckT: 0 });
     e.gun = scene.add.image(x, y, 'enemy_gun').setOrigin(0.1, 0.5); DK.applyArt(e.gun, 'enemy_gun'); e.gun.setOrigin(0.1, 0.5);
     if (type === 'charger' || e.realSkin) e.gun.setVisible(false);
     if (type === 'heavy') { e.shieldImg = scene.add.image(x, y, 'shield'); DK.applyArt(e.shieldImg, 'shield'); e.shieldImg.setVisible(!e.realSkin); e.facing = Math.atan2(scene.player.y - y, scene.player.x - x); }
     if (type === 'sniper') e.t = 0.6 + Math.random() * 0.6;
+    if (DK.ENEMY_INIT && DK.ENEMY_INIT[type]) DK.ENEMY_INIT[type](scene, e);
     if (extra) Object.assign(e, extra);
     scene.enemies.add(e);
     e.setAlpha(0); scene.tweens.add({ targets: e, alpha: 1, duration: 200 });
@@ -72,7 +74,8 @@
     if (e.realSkin) {
       e.hurtT = (e.hurtT || 0) - dt; e.atkT = (e.atkT || 0) - dt;
       // attack frames are driven by the AI below (e.atkFrame) so shots land on the manifest's event frames
-      if (e.atkFrame != null) DK.animFrame(e, 'attack', e.atkFrame);
+      if (e.animOverride && e.skin.anims[e.animOverride]) DK.anim(e, e.animOverride);
+      else if (e.atkFrame != null) DK.animFrame(e, 'attack', e.atkFrame);
       else if (e.atkT > 0) DK.anim(e, 'attack');
       else if (e.hurtT > 0) DK.anim(e, 'hurt');
       else DK.anim(e, 'move');
@@ -81,7 +84,7 @@
     const face = e.etype === 'heavy' ? e.facing : ang;
     if ((DK.ART['enemy_' + e.etype] || {}).flip !== false) e.setFlipX(Math.cos(face) < 0);
     if (e.gun.visible) e.gun.setPosition(e.x + Math.cos(face) * 6, e.y + 6 + Math.sin(face) * 6).setRotation(face).setFlipY(Math.cos(face) < 0).setDepth(e.y + 1);
-    if (frozen) { e.setVelocity(0); if (e.etype === 'sniper' && e.state === 'aim') { e.state = 'move'; e.t = 1; DK.stopSfx(e.warnSnd); e.warnSnd = null; } return; }
+    if (frozen) { e.setVelocity(0); if (e.onFrozen) e.onFrozen(); if (e.etype === 'sniper' && e.state === 'aim') { e.state = 'move'; e.t = 1; DK.stopSfx(e.warnSnd); e.warnSnd = null; } return; }
     const sp = c.speed * slow; e.atkFrame = null;
     e.t -= dt * slow;
     switch (e.etype) {
@@ -100,7 +103,7 @@
         }
         break;
       }
-      case 'rifle': {
+      case 'rifle': case 'camel_rider': {
         const [r0, r1] = c.range;
         let tx = e.x, ty = e.y;
         if (dist > r1) { tx = p.x; ty = p.y; }
@@ -157,6 +160,7 @@
         const sd = DK.shieldDir(e); e.shieldImg.setPosition(e.x + Math.cos(sd) * (c.radius + 6), e.y).setRotation(sd).setDepth(e.y + 2); // fallback art: same side as the flipped sprite
         break;
       }
+      default: if (DK.ENEMY_AI && DK.ENEMY_AI[e.etype]) DK.ENEMY_AI[e.etype](scene, e, dt, { p, dx, dy, dist, ang, sp, slow, steer });
     }
   };
 
@@ -170,6 +174,7 @@
         g.lineStyle(locked ? 3 : 1.5, 0xff2020, blink ? 1 : 0.4 + 0.5 * (e.aimT / e.cfg.aim));
         g.lineBetween(e.x, e.y, e.x + Math.cos(e.aimAng) * len, e.y + Math.sin(e.aimAng) * len);
       }
+      if (DK.ENEMY_FX && DK.ENEMY_FX[e.etype]) DK.ENEMY_FX[e.etype](scene, g, e);
       if (e.etype === 'charger' && e.state === 'fuse') { g.lineStyle(2, 0xff3030, 0.7).strokeCircle(e.x, e.y, e.cfg.boomRadius); }
       if (e.hp < e.maxHp) {
         const w = Math.max(24, e.radius * 2), y = e.y - e.radius - 12;

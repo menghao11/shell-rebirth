@@ -144,6 +144,10 @@
       objs.push(DK.button(this, W / 2, 340, 220, 44, '重看开场剧情', () => { close(); this.dlg.show(DK.lines(DK.story.intro)); }, { depth: 1102, fontSize: 16 }));
       objs.push(DK.button(this, W / 2, 396, 220, 44, '重玩教学关', () => { close(); this.startTutorial('replay'); }, { depth: 1102, fontSize: 16 }));
       objs.push(DK.button(this, W / 2, 456, 220, 44, '关闭', () => close(), { depth: 1102 }));
+      // 测试选关: start a fresh run straight into a stage
+      objs.push(DK.txt(this, W / 2 - 250, 512, '选关', { fontSize: '15px', color: '#aaa' }).setOrigin(0.5).setDepth(1101));
+      objs.push(DK.button(this, W / 2 - 120, 512, 180, 38, '第一关 · 前线', () => { close(); this.sortie(1); }, { depth: 1102, fontSize: 15 }));
+      objs.push(DK.button(this, W / 2 + 90, 512, 200, 38, '第二关 · 沙海', () => { close(); this.sortie(2); }, { depth: 1102, fontSize: 15 }));
       const close = () => { objs.forEach(o => o.destroy()); this.modal = null; };
       this.modal = { close };
     }
@@ -151,12 +155,12 @@
       if (this.leaving) return; this.leaving = true; DK.tutorialMode = mode;
       this.cameras.main.fadeOut(250, 0, 0, 0); this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Run'));
     }
-    sortie() {
+    sortie(stage) {
       if (this.leaving) return;
-      if (!DK.tutorialDone()) return this.startTutorial('first'); // first sortie: the skippable 教学关, then straight into room 1
+      if (!stage && !DK.tutorialDone()) return this.startTutorial('first'); // first sortie: the skippable 教学关, then straight into room 1
       this.leaving = true;
       const line = DK.npcLine('laoqiang', 'sortie');
-      const go = () => { DK.run = DK.newRun(); this.cameras.main.fadeOut(250, 0, 0, 0); this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Run')); };
+      const go = () => { DK.run = DK.newRun(); if (stage === 2) DK.run.stage = 2; this.cameras.main.fadeOut(250, 0, 0, 0); this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Run')); };
       if (line) { DK.speech(this, line, 1400); this.time.delayedCall(900, go); } else go();
     }
     update(t, dtMs) {

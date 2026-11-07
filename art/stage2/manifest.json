@@ -1,0 +1,779 @@
+{
+  "style": "polished cartoon / chibi, bold outlines, anti-aliased RGBA",
+  "view": "3/4 top-down, sprites facing RIGHT; flipX for left",
+  "units": "px",
+  "assets": [
+    {
+      "name": "tile_sand_a_256",
+      "group": "tiles",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_a_256.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_a_128",
+      "group": "tiles",
+      "frame_size": [
+        128,
+        128
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_a_128.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_b_256",
+      "group": "tiles",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_b_256.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_b_128",
+      "group": "tiles",
+      "frame_size": [
+        128,
+        128
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_b_128.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_c_256",
+      "group": "tiles",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_c_256.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_c_128",
+      "group": "tiles",
+      "frame_size": [
+        128,
+        128
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_c_128.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_d_256",
+      "group": "tiles",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_d_256.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "tile_sand_d_128",
+      "group": "tiles",
+      "frame_size": [
+        128,
+        128
+      ],
+      "frame_count": 1,
+      "frames": [
+        "tiles/tile_sand_d_128.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Opaque seamless sand. All variants share a common edge strip; random mix 55/20/15/10.",
+      "opaque": true
+    },
+    {
+      "name": "s2_bones_scatter",
+      "group": "props",
+      "frame_size": [
+        178,
+        129
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_bones_scatter.png"
+      ],
+      "anchor": [
+        89,
+        126
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "bones scatter",
+      "collision_role": "decoration",
+      "collision_rect": null,
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_bones_skull",
+      "group": "props",
+      "frame_size": [
+        167,
+        135
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_bones_skull.png"
+      ],
+      "anchor": [
+        83,
+        132
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "bones skull",
+      "collision_role": "decoration",
+      "collision_rect": null,
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_cactus_cluster",
+      "group": "props",
+      "frame_size": [
+        152,
+        154
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_cactus_cluster.png"
+      ],
+      "anchor": [
+        76,
+        151
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "cactus cluster",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        27,
+        124,
+        97,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_cactus_tall",
+      "group": "props",
+      "frame_size": [
+        115,
+        176
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_cactus_tall.png"
+      ],
+      "anchor": [
+        57,
+        173
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "cactus tall",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        21,
+        146,
+        74,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_dune_large",
+      "group": "props",
+      "frame_size": [
+        233,
+        124
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_dune_large.png"
+      ],
+      "anchor": [
+        116,
+        121
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "dune large",
+      "collision_role": "decoration",
+      "collision_rect": null,
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_dune_small",
+      "group": "props",
+      "frame_size": [
+        211,
+        104
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_dune_small.png"
+      ],
+      "anchor": [
+        105,
+        101
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "dune small",
+      "collision_role": "decoration",
+      "collision_rect": null,
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_oil_drum",
+      "group": "props",
+      "frame_size": [
+        98,
+        156
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_oil_drum.png"
+      ],
+      "anchor": [
+        49,
+        153
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "oil drum",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        18,
+        126,
+        63,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_oil_tank",
+      "group": "props",
+      "frame_size": [
+        180,
+        143
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_oil_tank.png"
+      ],
+      "anchor": [
+        90,
+        140
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "oil tank",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        32,
+        113,
+        115,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_rocks",
+      "group": "props",
+      "frame_size": [
+        197,
+        154
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_rocks.png"
+      ],
+      "anchor": [
+        98,
+        151
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "rocks",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        35,
+        124,
+        126,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_sign",
+      "group": "props",
+      "frame_size": [
+        174,
+        149
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_sign.png"
+      ],
+      "anchor": [
+        87,
+        146
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "sign",
+      "collision_role": "decoration",
+      "collision_rect": null,
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_supplies",
+      "group": "props",
+      "frame_size": [
+        181,
+        129
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_supplies.png"
+      ],
+      "anchor": [
+        90,
+        126
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "supplies",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        33,
+        99,
+        116,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "s2_tent",
+      "group": "props",
+      "frame_size": [
+        238,
+        164
+      ],
+      "frame_count": 1,
+      "frames": [
+        "props/s2_tent.png"
+      ],
+      "anchor": [
+        119,
+        161
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "tent",
+      "collision_role": "obstacle",
+      "collision_rect": [
+        43,
+        134,
+        152,
+        24
+      ],
+      "source": "Grok generated prop family; sprite-gen slice-sheet chroma extraction"
+    },
+    {
+      "name": "grenadier_reference",
+      "group": "references",
+      "frame_size": [
+        320,
+        320
+      ],
+      "frame_count": 1,
+      "frames": [
+        "references/grenadier_reference.png"
+      ],
+      "anchor": [
+        160,
+        300
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Visual master only; full enemy animation set NOT delivered.",
+      "status": "reference_only"
+    },
+    {
+      "name": "jumper_reference",
+      "group": "references",
+      "frame_size": [
+        320,
+        320
+      ],
+      "frame_count": 1,
+      "frames": [
+        "references/jumper_reference.png"
+      ],
+      "anchor": [
+        160,
+        300
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Visual master only; full enemy animation set NOT delivered.",
+      "status": "reference_only"
+    },
+    {
+      "name": "camel_foot_reference",
+      "group": "references",
+      "frame_size": [
+        320,
+        320
+      ],
+      "frame_count": 1,
+      "frames": [
+        "references/camel_foot_reference.png"
+      ],
+      "anchor": [
+        160,
+        300
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Visual master only; full enemy animation set NOT delivered.",
+      "status": "reference_only"
+    },
+    {
+      "name": "camel_mounted_reference",
+      "group": "references",
+      "frame_size": [
+        640,
+        512
+      ],
+      "frame_count": 1,
+      "frames": [
+        "references/camel_mounted_reference.png"
+      ],
+      "anchor": [
+        320,
+        490
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Visual master only; full enemy animation set NOT delivered.",
+      "status": "reference_only"
+    },
+    {
+      "name": "grenadier_idle",
+      "group": "enemies/grenadier",
+      "frame_size": [
+        320,
+        320
+      ],
+      "frame_count": 4,
+      "frames": [
+        "enemies/grenadier/grenadier_idle_00.png",
+        "enemies/grenadier/grenadier_idle_01.png",
+        "enemies/grenadier/grenadier_idle_02.png",
+        "enemies/grenadier/grenadier_idle_03.png"
+      ],
+      "anchor": [
+        160,
+        300
+      ],
+      "fps": 6,
+      "loop": true,
+      "purpose": "Subtle breathing idle from same video identity.",
+      "sheet": "enemies/grenadier/grenadier_idle_sheet.png",
+      "sheet_layout": "4x1 horizontal strip",
+      "source": "Native Grok video opening breathing segment",
+      "status": "review_loop"
+    },
+    {
+      "name": "grenadier_throw",
+      "group": "enemies/grenadier",
+      "frame_size": [
+        320,
+        320
+      ],
+      "frame_count": 8,
+      "frames": [
+        "enemies/grenadier/grenadier_throw_00.png",
+        "enemies/grenadier/grenadier_throw_01.png",
+        "enemies/grenadier/grenadier_throw_02.png",
+        "enemies/grenadier/grenadier_throw_03.png",
+        "enemies/grenadier/grenadier_throw_04.png",
+        "enemies/grenadier/grenadier_throw_05.png",
+        "enemies/grenadier/grenadier_throw_06.png",
+        "enemies/grenadier/grenadier_throw_07.png"
+      ],
+      "anchor": [
+        160,
+        300
+      ],
+      "fps": 10,
+      "loop": false,
+      "purpose": "One overhand grenade throw; spawn grenade on frame 05.",
+      "sheet": "enemies/grenadier/grenadier_throw_sheet.png",
+      "sheet_layout": "8x1 horizontal strip",
+      "source": "Native Grok video -> sprite-gen video-frames + video-loop; manual sampling and per-frame feet registration",
+      "event_frames": {
+        "release_grenade": 5
+      }
+    },
+    {
+      "name": "s2_landing_target",
+      "group": "fx",
+      "frame_size": [
+        256,
+        128
+      ],
+      "frame_count": 8,
+      "frames": [
+        "fx/s2_landing_target_00.png",
+        "fx/s2_landing_target_01.png",
+        "fx/s2_landing_target_02.png",
+        "fx/s2_landing_target_03.png",
+        "fx/s2_landing_target_04.png",
+        "fx/s2_landing_target_05.png",
+        "fx/s2_landing_target_06.png",
+        "fx/s2_landing_target_07.png"
+      ],
+      "anchor": [
+        128,
+        64
+      ],
+      "fps": 12,
+      "loop": true,
+      "purpose": "Fixed blast-radius ring, ellipse ground projection. Pulse while grenade is airborne.",
+      "sheet": "fx/s2_landing_target_sheet.png",
+      "sheet_layout": "8x1 horizontal strip"
+    },
+    {
+      "name": "s2_sand_grain",
+      "group": "fx",
+      "frame_size": [
+        32,
+        16
+      ],
+      "frame_count": 1,
+      "frames": [
+        "fx/s2_sand_grain.png"
+      ],
+      "anchor": [
+        16,
+        8
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Sand particle emitter sprite; screen-space drift right at 120-220 logical px/s; additive blending OFF."
+    },
+    {
+      "name": "s2_sand_streak",
+      "group": "fx",
+      "frame_size": [
+        64,
+        24
+      ],
+      "frame_count": 1,
+      "frames": [
+        "fx/s2_sand_streak.png"
+      ],
+      "anchor": [
+        32,
+        12
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Sand particle emitter sprite; screen-space drift right at 120-220 logical px/s; additive blending OFF."
+    },
+    {
+      "name": "s2_blowing_sand",
+      "group": "fx",
+      "frame_size": [
+        256,
+        128
+      ],
+      "frame_count": 12,
+      "frames": [
+        "fx/s2_blowing_sand_00.png",
+        "fx/s2_blowing_sand_01.png",
+        "fx/s2_blowing_sand_02.png",
+        "fx/s2_blowing_sand_03.png",
+        "fx/s2_blowing_sand_04.png",
+        "fx/s2_blowing_sand_05.png",
+        "fx/s2_blowing_sand_06.png",
+        "fx/s2_blowing_sand_07.png",
+        "fx/s2_blowing_sand_08.png",
+        "fx/s2_blowing_sand_09.png",
+        "fx/s2_blowing_sand_10.png",
+        "fx/s2_blowing_sand_11.png"
+      ],
+      "anchor": [
+        128,
+        64
+      ],
+      "fps": 12,
+      "loop": true,
+      "purpose": "One-second sparse wind sand loop, transparent negative space. Layer at opacity 0.35-0.6; not a full-screen opaque overlay.",
+      "sheet": "fx/s2_blowing_sand_sheet.png",
+      "sheet_layout": "12x1 horizontal strip"
+    },
+    {
+      "name": "s2_grenade_spin",
+      "group": "projectiles",
+      "frame_size": [
+        64,
+        64
+      ],
+      "frame_count": 8,
+      "frames": [
+        "projectiles/s2_grenade_spin_00.png",
+        "projectiles/s2_grenade_spin_01.png",
+        "projectiles/s2_grenade_spin_02.png",
+        "projectiles/s2_grenade_spin_03.png",
+        "projectiles/s2_grenade_spin_04.png",
+        "projectiles/s2_grenade_spin_05.png",
+        "projectiles/s2_grenade_spin_06.png",
+        "projectiles/s2_grenade_spin_07.png"
+      ],
+      "anchor": [
+        32,
+        32
+      ],
+      "fps": 16,
+      "loop": true,
+      "purpose": "Spinning painted grenade; move arc in game code, do not animate anchor.",
+      "sheet": "projectiles/s2_grenade_spin_sheet.png",
+      "sheet_layout": "8x1 horizontal strip",
+      "source": "Stage-1 grenade artwork, re-framed and rotated"
+    },
+    {
+      "name": "s2_explosion",
+      "group": "fx",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 8,
+      "frames": [
+        "fx/s2_explosion_00.png",
+        "fx/s2_explosion_01.png",
+        "fx/s2_explosion_02.png",
+        "fx/s2_explosion_03.png",
+        "fx/s2_explosion_04.png",
+        "fx/s2_explosion_05.png",
+        "fx/s2_explosion_06.png",
+        "fx/s2_explosion_07.png"
+      ],
+      "anchor": [
+        128,
+        128
+      ],
+      "fps": 16,
+      "loop": false,
+      "purpose": "Painted stage-1 explosion + sand shockwave; trigger damage on frame 01. No pixelFX artwork used.",
+      "sheet": "fx/s2_explosion_sheet.png",
+      "sheet_layout": "8x1 horizontal strip",
+      "source": "Existing stage-1 Grok explosion artwork + procedural sand ring",
+      "event_frames": {
+        "damage": 1
+      }
+    }
+  ],
+  "specs": {
+    "delivery_status": "PARTIAL — environment/VFX complete, enemy sets incomplete; do not mark stage-2 art done",
+    "character_frame": "320x320 anchor (160,300); death planned 512x320 anchor (256,300)",
+    "mounted_frame": "640x512 anchor (320,490), 360px total visible standing height. All mounted states must retain these dimensions and anchor.",
+    "missing": [
+      "camel_mounted: idle/move/charge/shoot/hurt/death",
+      "camel_dismount transition and camel corpse",
+      "camel_foot: idle/move/attack/hurt/death",
+      "jumper: idle/move/attack/hurt/death/windup/jump/landing",
+      "grenadier: move/hurt/death"
+    ],
+    "pipeline": "First-party native Grok generation. sprite-gen workflow says local Grok credential missing/expired/unreadable, so no batch animation generation was run. Native video throw retained; sprite-gen extraction and one-shot cut retained. Automatic video-loop once cut selected the opening idle, not the throw; retained for comparison. Recut through video-loop fixed (start 42, length 97). Manual nonuniform sampling + scale/feet registration documented in alignment.json. Full batch motion generation still requires restored CLI access.",
+    "build_order": "finalize.py -> p27_assets.py -> existing stage-1 docs/preview/verify -> stage2_build.py -> stage2_verify.py. finalize.py wipes art/, so keep generated sources in art_src/stage2 and run stage2 build last.",
+    "integration": "This sub-manifest is separate, frames are relative to art/stage2/. Prefix each frame/sheet by stage2/ when merging into art/manifest.json. No game code or stage-1 manifest changed.",
+    "transitions": "Ground transitions not delivered; optional."
+  }
+}

@@ -103,12 +103,44 @@
       urls.sort((a, b) => AUD_EXT.indexOf(ext(a)) - AUD_EXT.indexOf(ext(b)));
       plan.audio.push({ key, urls });
     }
+    // ---- stage 2 (art/stage2/manifest.json in the art-team format, audio/stage2/*.mp3 + MANIFEST.md volumes, story/stage2.json)
+    await discoverStage2(plan, seen);
     // ---- story
     const storyDir = P.story.replace(/[^/]+$/, ''), storyFile = P.story.split('/').pop();
     const stFiles = await listDir(storyDir);
     if (stFiles === null || stFiles.includes(storyFile)) plan.story = P.story;
     return plan;
   };
+
+  async function discoverStage2(plan, seen) {
+    const P = DK.PATHS; DK.assetReport.stage2 = { art: 0, audio: 0, story: false };
+    const files = await listDir(P.art2);
+    const man = (files === null || (files && files.includes('manifest.json'))) ? await fetchJson(P.art2 + 'manifest.json') : null;
+    if (man && Array.isArray(man.assets)) for (const a0 of man.assets) {
+      if (!a0 || !a0.name) continue;
+      const a = Object.assign({ res_scale: 1, x_offset: 0 }, a0), fs = a.frame_size || null, n = a.frame_count || 1;
+      const url = n > 1 && a.sheet && fs ? a.sheet : (a.file || (a.frames && a.frames[0]) || a.sheet); if (!url) continue;
+      DK.ARTX[a.name] = a; plan.images.push({ key: a.name, url: P.art2 + url, frames: n > 1 && a.sheet && fs ? { w: fs[0], h: fs[1] } : null }); seen.add(a.name); DK.assetReport.stage2.art++;
+    }
+    if (files) for (const f of files) { // loose stage-2 images named after a game key (art/stage2/prop_cactus.png ...)
+      if (!IMG_EXT.includes(ext(f))) continue; const key = base(f);
+      if (seen.has(key) || !DK.ART[key]) continue; plan.images.push({ key, url: P.art2 + f }); seen.add(key); DK.assetReport.stage2.art++;
+    }
+    const af = await listDir(P.audio2);
+    if (af) {
+      const groups = {};
+      for (const f of af) { if (!AUD_EXT.includes(ext(f))) continue; const key = P.audio2Prefix + base(f); (groups[key] = groups[key] || []).push(P.audio2 + f); }
+      for (const [key, urls] of Object.entries(groups)) { urls.sort((a, b) => AUD_EXT.indexOf(ext(a)) - AUD_EXT.indexOf(ext(b))); plan.audio.push({ key, urls }); DK.assetReport.stage2.audio++; }
+      if (af.includes('MANIFEST.md')) { // volumes + exact loop lengths straight from 声音王's table
+        try { const md = await (await fetch(P.audio2 + 'MANIFEST.md', { cache: 'no-store' })).text();
+          md.split('\n').forEach(line => { const m = line.match(/^\|\s*`([\w-]+)\.mp3`\s*\|.*\|\s*([\d.]+)(?:-[\d.]+)?\s*\|\s*$/); if (m) DK.SFX_VOL[P.audio2Prefix + m[1]] = parseFloat(m[2]); });
+          const loopRe = /(\w+)\s*\*\*([\d.]+)\s*s\*\*/g; let m; while ((m = loopRe.exec(md))) DK.BGM_LOOP[P.audio2Prefix + m[1]] = parseFloat(m[2]);
+        } catch (e) {}
+      }
+    }
+    const sf = await listDir(P.story2.replace(/[^/]+$/, ''));
+    if (sf === null || sf.includes(P.story2.split('/').pop())) { plan.story2 = P.story2; DK.assetReport.stage2.story = true; }
+  }
 
   DK.queueAssets = function (scene, plan) {
     for (const im of plan.images) {
@@ -117,6 +149,7 @@
     }
     for (const a of plan.audio) scene.load.audio(a.key, a.urls);
     if (plan.story) scene.load.json('story', plan.story);
+    if (plan.story2) scene.load.json('story2', plan.story2);
   };
 
   // After loading: mark what's real, make animations, build placeholders for the rest.
@@ -300,11 +333,12 @@
   DK.ICON_CHAR = Object.fromEntries(Object.entries(ICON).map(([k, v]) => [k, v[1]]));
   const PORTRAIT = { portrait_mark: 'player', portrait_laoqiang: 'npc_laoqiang', portrait_lingjian: 'npc_lingjian', portrait_anvil: 'boss_turret', portrait_system: null };
 
+  DK.placeholderTex = tex; DK.PLACEHOLDERS = P; // stage2.js adds its desert placeholders to P
   DK.makePlaceholder = function (scene, key) {
     const [w, h] = DK.artSize(key);
     if (P[key]) return tex(scene, key, w, h, P[key]);
     const fb = (DK.ART[key] || {}).fallback || { floor_boss: 'floor' }[key];
-    if (fb && P[fb]) return tex(scene, key, w, h, P[fb]);
+    if (fb && P[fb]) return tex(scene, key, w, h, (g, W, H, q) => P[fb](g, W, H, q, key));
     if (ICON[key]) {
       const [col, ch] = ICON[key];
       tex(scene, key, w, h, (g, W, H, q) => { g.fillStyle(col).fillRoundedRect(0, 0, W, H, 8 * q); g.lineStyle(2 * q, 0xffffff, .7).strokeRoundedRect(q, q, W - 2 * q, H - 2 * q, 8 * q); });

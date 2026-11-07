@@ -1,7 +1,7 @@
 // 《弹壳轮回》 game data — every tunable number lives here.
 window.DK = window.DK || {};
 (function (DK) {
-  DK.VERSION = '0.1.0-stage1';
+  DK.VERSION = '0.2.0-stage2';
   DK.W = 960; DK.H = 540;           // logical play-field size (one room = one screen)
   DK.M = 32;                        // 1 meter (design doc) = 32 logical px
   DK.R = Math.min(window.devicePixelRatio || 1, 2); // render scale for crisp text on retina
@@ -9,7 +9,8 @@ window.DK = window.DK || {};
   DK.WALL = 28;                     // arena wall thickness
 
   // ---- paths (relative to game/index.html). Missing files fall back to placeholders.
-  DK.PATHS = { art: '../art/', artWebDir: 'assets/art_web/', audio: '../audio/', story: '../story/story.json' };
+  DK.PATHS = { art: '../art/', artWebDir: 'assets/art_web/', audio: '../audio/', story: '../story/story.json',
+    art2: '../art/stage2/', audio2: '../audio/stage2/', story2: '../story/stage2.json', audio2Prefix: 's2_' }; // stage 2 drops in here (data-driven, no code change)
 
   // ---- touch controls (logical px; iPhone landscape ≈ 1.4 logical px per pt). Buttons are laid out in run.js / base.js.
   DK.TOUCH = { stickR: 95, knobR: 40, hitPad: 8, fireAimDead: 18, aimDead: 16, fullAt: 0.75, ghost: [150, 150] };
@@ -19,7 +20,7 @@ window.DK = window.DK || {};
     hp: 100, speed: 215, radius: 13,
     dashSpeed: 640, dashTime: 0.17, dashCd: 0.75, dashCharges: 1, dashGrace: 0.07, // 70 ms i-frame grace after a dash (review P2-9)
     hurtIframes: 0.6, grenades: 10,
-    passiveMul: 1.5,               // 马克被动：换弹后下一发 +50%
+    passiveMul: 1.5, passiveShots: 3, // 马克被动「冲锋射手」：每次冲刺后接下来 3 发 +50% 伤害（橙色子弹 + 强化枪声 + 头顶橙点）
     critMul: 2.0,
     // aim (user-approved scheme): auto-fire with soft aim assist = bullets bend toward an enemy within assistDeg of the shot line
     assistDeg: 18, assistTurn: 4.2, assistTime: 0.5,
@@ -86,6 +87,54 @@ window.DK = window.DK || {};
     { type: 'shop',    name: '军火商 / 休息站' },
     { type: 'boss',    name: '铁砧' }
   ];
+
+  // =====================================================================================================
+  // ---- 第二关 沙海 (stage 2) — ALL stage-2 numbers live here (enemy HP/damage, boss, growth scaling).
+  //   Growth scaling (审核王 checks this): stage-2 enemy HP is multiplied by
+  //     hpMul = 1 + ratio × (playerGrowth − 1),  ratio = 0.65  (monster growth ≈ 65 % of player growth)
+  //   playerGrowth = the run's expected DPS ÷ a fresh pistol's (DK.playerGrowth). Damage is NOT scaled, so an
+  //   enemy's HP×DPS rises by exactly 65 % of the player's DPS rise. Base values below are for a fresh pistol run.
+  //   The boss uses its fixed HP + the armour plate (N1 rule), not the growth multiplier.
+  // =====================================================================================================
+  DK.STAGE2 = {
+    name: '沙海', faction: '沙蝎军团',
+    growth: { ratio: 0.65, baseDps: 40, cap: 4.5, ammoBonus: { burn: 0.12, freeze: 0.08, split: 0.25 }, ringDps: 6 },
+    enemies: {
+      // 沙蝎骑兵: camel HP; when the camel dies the rider (camel_rider) dismounts with its own HP
+      camel:       { name: '沙蝎骑兵', hp: 80, speed: 95, radius: 22, contact: 10, range: [220, 340], burst: 2, burstGap: 0.15, cd: 1.8, dmg: 5, bulletSpeed: 300,
+                     chargeTell: 0.65, chargeSpeed: 430, chargeTime: 0.75, chargeCd: 4.5, chargeDmg: 16, chargeRange: 430, stunT: 0.6, groanEvery: [4, 8], scrap: 3 },
+      camel_rider: { name: '沙蝎骑手', hp: 40, speed: 100, radius: 14, contact: 8, range: [180, 300], burst: 3, burstGap: 0.12, cd: 2.0, dmg: 5, bulletSpeed: 300, scrap: 1 },
+      // 沙蝎跳兵: crouch tell (≥250 ms) → leap sideways (bullets pass while airborne; blasts/burn still hit) → 2.4 s cooldown
+      jumper:      { name: '沙蝎跳兵', hp: 40, speed: 115, radius: 13, contact: 6, range: [160, 280], burst: 2, burstGap: 0.14, cd: 1.9, dmg: 5, bulletSpeed: 320,
+                     dodgeTell: 0.30, dodgeDist: 95, dodgeTime: 0.32, dodgeCd: 2.4, dodgeFirst: 1.0, dodgeChance: 0.5, dodgeLook: 0.45, recoverT: 0.6, scrap: 2 },
+      // 沙蝎掷弹兵: lobbed grenade; the warning circle (= blast radius) appears on the throw, boom `fuse` s later
+      grenadier:   { name: '沙蝎掷弹兵', hp: 50, speed: 75, radius: 14, contact: 6, range: [240, 380], throwCd: 3.2, windup: 0.5, flight: 0.7, fuse: 1.1,
+                     blastRadius: 64, dmg: 22, releaseFrame: 5, maxHpFrac: 0.35, maxLive: 4, shootable: true, scrap: 2 }
+    },
+    rooms: [
+      { type: 'combat',  name: '流沙谷', waves: [{ charger: 2, rifle: 1, jumper: 1 }, { jumper: 2, grenadier: 1, charger: 1 }] },
+      { type: 'combat',  name: '骆驼道', waves: [{ camel: 1, rifle: 2 }, { camel: 1, jumper: 1, grenadier: 1 }] },
+      { type: 'combat',  name: '油罐场', waves: [{ grenadier: 2, jumper: 1, heavy: 1 }, { camel: 1, jumper: 2, grenadier: 1 }] },
+      { type: 'special', name: '沙丘营地' },  // hostage / merchant / rest (rolled per run: run.special2)
+      { type: 'boss',    name: '沙鲸' }
+    ],
+    // 沙鲸·流沙之喉 (boss_sandwhale). All timing is GAME time.
+    boss: {
+      name: '沙鲸', title: '流沙之喉', hp: 2400, phase2At: 1600, phase3At: 800, contact: 22, radius: 60, phaseInvuln: 1.6,
+      // P1 潜沙: trail tell → burst + ram → surfaced (hittable) with a back-turret fan
+      trailTell: 1.1, trailSpeed: 260, ramSpeed: 520, ramTime: 0.55, ramDmg: 24, surfaceT: 3.2, fanN: 5, fanSpread: 0.22, fanDmg: 7, fanSpeed: 260, fanEvery: 1.1,
+      // P2 沙暴: visibility drop, spits jumpers/grenadiers, sand-stream sweeps
+      stormAlpha: 0.38, minionEvery: 9, minionMax: 3, streamEvery: 3.4, streamN: 16, streamSweep: 1.9, streamDmg: 6, streamSpeed: 250, p2FanEvery: 2.6,
+      // P3 开膛: exposed 回响舱 core (weak point ×coreMul, rest of the body ×shellMul), rolls + shard rings with a gap
+      coreR: 26, coreMul: 1.6, shellMul: 0.6, rollEvery: 3.0, rollSpeed: 330, rollTime: 0.9, ringN: 22, ringGap: 4, ringDmg: 7, ringSpeed: 140, ringEvery: 1.25,
+      // armour plate + lock: same model and constants style as 铁砧 (N1)
+      plateDps: 20, platePow: 0.55, plateTau: 3, phaseMinT: [12, 12, 8],
+      minY: 150
+    },
+    hostageScrap: 15,
+    hostageWaves: [{ jumper: 1, grenadier: 1, charger: 1 }, { camel: 1, rifle: 1 }],
+    forceSpecial: null // __dbg.special(kind) pins the special room for tests
+  };
   DK.ROOM_SCRAP = 10;      // 每清一个房间
   DK.HOSTAGE_SCRAP = 15;
 
@@ -94,10 +143,10 @@ window.DK = window.DK || {};
     { id: 'ammo_burn',   name: '燃烧弹',   icon: 'icon_burn',    desc: '30% 点燃\n每秒4伤，持续3秒，最多3层', can: r => !r.ammoTypes.includes('burn') },
     { id: 'ammo_freeze', name: '冰冻弹',   icon: 'icon_freeze',  desc: '35% 叠冰\n每层减速15%，4层冻结1.5秒', can: r => !r.ammoTypes.includes('freeze') },
     { id: 'ammo_split',  name: '分裂弹',   icon: 'icon_split',   desc: '命中后裂成3颗\n各35%伤害', can: r => !r.ammoTypes.includes('split') },
-    { id: 'weapon_mg',   name: '机枪',     icon: 'icon_mg',      desc: '6伤 10发/秒 弹匣40\n按 1/2 或滚轮切换', can: r => !r.weapons.includes('mg') },
+    { id: 'weapon_mg',   name: '机枪',     icon: 'icon_mg',      desc: '6伤 10发/秒\n按 1/2 或滚轮切换', can: r => !r.weapons.includes('mg') },
     { id: 'mod_bigcal',  name: '大口径',   icon: 'icon_mod',     desc: '伤害 +40%\n射速 -25%', can: r => !r.mods.bigcal },
     { id: 'mod_fifth',   name: '第五发',   icon: 'icon_mod',     desc: '每第5发子弹\n必定暴击', can: r => !r.mods.fifth },
-    { id: 'mod_recycle', name: '弹壳回收', icon: 'icon_mod',     desc: '（无限弹药后停用）', can: r => false },
+    { id: 'mod_recycle', name: '弹壳回收', icon: 'icon_mod',     desc: '每射出30发\n回收1枚手雷（每房间≤2）', can: r => !r.mods.recycle },
     { id: 'mod_frenzy',  name: '狂热扳机', icon: 'icon_mod',     desc: '连续射击3秒后\n射速 +50%', can: r => !r.mods.frenzy },
     { id: 'mod_ring',    name: '爆环',     icon: 'icon_mod',     desc: '战斗中每4秒\n向四周射出8发', can: r => !r.mods.ring },
     { id: 'hp_up',       name: '战地装甲', icon: 'icon_armor',   desc: '最大生命 +20\n并回复20', can: r => true },
@@ -158,13 +207,25 @@ window.DK = window.DK || {};
     portrait_anvil:{ size: [96, 96] }, portrait_system: { size: [96, 96] }
   };
 
+  // ---- stage 2 art keys (placeholders until art/stage2/manifest.json supplies the same names; see DK.SKINS / DK.PROPS2)
+  Object.assign(DK.ART, {
+    enemy_camel: { size: [64, 56], flip: true }, enemy_camel_rider: { size: [38, 38], flip: true },
+    enemy_jumper: { size: [36, 36], flip: true }, enemy_grenadier: { size: [38, 38], flip: true },
+    enemy_grenade: { size: [20, 20] }, boss_sandwhale: { size: [200, 120] }, sw_core: { size: [52, 52] }, sw_turret: { size: [60, 26] },
+    floor_sand: { size: [128, 128] }, floor_sand_b: { size: [128, 128], fallback: 'floor_sand' }, floor_sand_c: { size: [128, 128], fallback: 'floor_sand' }, floor_sand_d: { size: [128, 128], fallback: 'floor_sand' },
+    wall_desert: { size: [64, 64] }, sand_mote: { size: [6, 3] },
+    prop_dune: { size: [150, 54] }, prop_cactus: { size: [34, 54] }, prop_bones: { size: [46, 24] }, prop_oiltank: { size: [70, 60] }, prop_tent: { size: [104, 76] },
+    echo_pod_zero: { size: [70, 90], fallback: 'echo_pod' }
+  });
   // Game key -> art-team asset name (art/manifest.json). The placeholder stays as the fallback.
   DK.ART_ALIAS = {
     bullet_boss: 'bullet_enemy', shell_cannon: 'shell_boss', mine: 'landmine', casing: 'shell_casing',
     muzzle: 'fx_muzzle_flash', explosion: 'fx_explosion', spark: 'fx_impact_spark',
     floor: 'tile_ground_dirt_256', floor_base: 'tile_ground_concrete_256', floor_boss: 'tile_ground_concrete_256', floor_shop: 'tile_ground_concrete_256',
     icon_burn: 'icon_ammo_fire', icon_freeze: 'icon_ammo_ice', icon_split: 'icon_ammo_split', icon_mg: 'icon_weapon_mg',
-    icon_mod: 'icon_chip', icon_heal: 'icon_medkit', icon_hp: 'icon_health'
+    icon_mod: 'icon_chip', icon_heal: 'icon_medkit', icon_hp: 'icon_health',
+    floor_sand: 'tile_sand_a_256', floor_sand_b: 'tile_sand_b_256', floor_sand_c: 'tile_sand_c_256', floor_sand_d: 'tile_sand_d_256', // art/stage2 (画图王)
+    sand_mote: 's2_sand_streak', enemy_grenade: 's2_grenade_spin'
   };
   // Origins for single images whose art anchor is not the centre (muzzle flash anchors at the muzzle).
   DK.ART.muzzle.origin = [4 / 128, 0.5];
@@ -194,15 +255,40 @@ window.DK = window.DK || {};
     npc_laoqiang:  { scale: 0.33, lift: 30, anims: { idle: 'laoqiang_idle', talk: 'laoqiang_talk' } },
     npc_lingjian:  { scale: 0.33, lift: 30, anims: { idle: 'lingjian_idle', talk: 'lingjian_talk' } },
     npc_lingjian_dock: { scale: 0.52, lift: 30, anims: { idle: 'lingjian_idle', talk: 'lingjian_talk' } },
-    npc_merchant:  { scale: 0.36, lift: 30, anims: { idle: 'merchant_idle' } }
+    npc_merchant:  { scale: 0.36, lift: 30, anims: { idle: 'merchant_idle' } },
+    // stage 2 (art/stage2/manifest.json — same frame size + feet anchor per set so switching never jumps)
+    enemy_camel:       { scale: 0.36, lift: 30, anims: { move: 'camel_move', attack: 'camel_shoot', charge: 'camel_charge', hurt: 'camel_hurt', death: 'camel_death', dismount: 'camel_dismount' } },
+    enemy_camel_rider: { scale: 0.33, lift: 22, anims: { move: 'camelrider_move', attack: 'camelrider_attack', hurt: 'camelrider_hurt', death: 'camelrider_death' } },
+    enemy_jumper:      { scale: 0.33, lift: 22, anims: { move: 'jumper_move', attack: 'jumper_attack', tell: 'jumper_crouch', jump: 'jumper_jump', hurt: 'jumper_hurt', death: 'jumper_death' } },
+    enemy_grenadier:   { scale: 0.33, lift: 22, anims: { move: 'grenadier_idle', walk: 'grenadier_move', attack: 'grenadier_throw', hurt: 'grenadier_hurt', death: 'grenadier_death' } }, // throw releases on frame 05 (10 fps)
+    boss_sandwhale:    { scale: 0.45, lift: 60, anims: { move: 'sandwhale_move', burrow: 'sandwhale_burrow', emerge: 'sandwhale_emerge', ram: 'sandwhale_ram', spit: 'sandwhale_spit', open: 'sandwhale_open', roll: 'sandwhale_roll', destroy: 'sandwhale_destroy' } }
   };
+  // stage-2 obstacles/decor, keyed by art/stage2 asset name (画图王). scale = art px → game px; hit = footprint body [w,h]
+  //   (null = decor, no collision, drawn under everything); ph = placeholder key while the art file is missing.
+  DK.PROPS2 = {
+    s2_dune_large:     { ph: 'prop_dune',    scale: 0.62, hit: null },
+    s2_dune_small:     { ph: 'prop_dune',    scale: 0.55, hit: null },
+    s2_bones_scatter:  { ph: 'prop_bones',   scale: 0.32, hit: null },
+    s2_bones_skull:    { ph: 'prop_bones',   scale: 0.32, hit: null },
+    s2_sign:           { ph: 'prop_bones',   scale: 0.36, hit: null },
+    s2_cactus_tall:    { ph: 'prop_cactus',  scale: 0.42, hit: [22, 16] },
+    s2_cactus_cluster: { ph: 'prop_cactus',  scale: 0.40, hit: [46, 20] },
+    s2_oil_tank:       { ph: 'prop_oiltank', scale: 0.50, hit: [80, 28] },
+    s2_oil_drum:       { ph: 'prop_oiltank', scale: 0.36, hit: [28, 20] },
+    s2_supplies:       { ph: 'cover',        scale: 0.42, hit: [64, 26] },
+    s2_rocks:          { ph: 'cover',        scale: 0.40, hit: [66, 28] },
+    s2_tent:           { ph: 'prop_tent',    scale: 0.50, hit: [104, 32] }
+  };
+  DK.PROPS2_GROUPS = { dune: ['s2_dune_large', 's2_dune_small'], bones: ['s2_bones_scatter', 's2_bones_skull', 's2_sign'], cactus: ['s2_cactus_tall', 's2_cactus_cluster'],
+    tank: ['s2_oil_tank', 's2_oil_drum', 's2_supplies'], rock: ['s2_rocks'], tent: ['s2_tent'] };
+  DK.FLOOR2 = ['floor_sand', 'floor_sand_b', 'floor_sand_c', 'floor_sand_d']; // weights 40/20/20/20
 
   // Dialogue portraits: [art asset, frame, scale of original px]. An asset named portrait_<speaker> wins if the art team adds one.
   // The first entry whose art exists is used; '<speaker>_portrait' busts (512px, bottom anchor) come from the art team.
   DK.PORTRAIT_ART = { mark: [['mark_portrait', 0, 0.22], ['hero_idle', 0, 0.55]], anvil: [['anvil_portrait', 0, 0.22], ['boss_move', 0, 0.3]],
     hostage: [['hostage_portrait', 0, 0.22], ['hostage_freed', 1, 0.55]],
     laoqiang: [['laoqiang_portrait', 0, 0.22], ['laoqiang_idle', 0, 0.55]], lingjian: [['lingjian_portrait', 0, 0.22], ['lingjian_idle', 0, 0.55]],
-    merchant: [['merchant_portrait', 0, 0.22], ['merchant_idle', 0, 0.55]] };
+    merchant: [['merchant_portrait', 0, 0.22], ['merchant_idle', 0, 0.55]], boss: [['sandwhale_portrait', 0, 0.22], ['sandwhale_move', 0, 0.3]] };
   // 铁皮屋 hub layout for art/scenes/base_tinshack_bg.png (1920x1080 painted room, shown at 960x540).
   // Rects are [x, y, w, h] in logical px, measured off the painting.
   DK.TINSHACK = {
@@ -235,6 +321,7 @@ window.DK = window.DK || {};
   DK.SPEAKERS = {
     mark: { name: '马克中士', color: '#7ee07a' }, laoqiang: { name: '老枪', color: '#f2c14e' },
     lingjian: { name: '零件', color: '#6fd6ff' }, anvil: { name: '铁砧', color: '#ff5a4e' },
-    system: { name: '', color: '#cfcfcf' }, hostage: { name: '人质', color: '#e0e0e0' }, merchant: { name: '军火商', color: '#d9a7ff' }
+    system: { name: '', color: '#cfcfcf' }, hostage: { name: '人质', color: '#e0e0e0' }, merchant: { name: '黄牙', color: '#d9a7ff' },
+    boss: { name: '沙鲸', color: '#e8b34a' }, camel_rider: { name: '沙蝎骑兵', color: '#e8b34a' }, jumper: { name: '沙蝎跳兵', color: '#e8b34a' }, grenadier: { name: '沙蝎掷弹兵', color: '#e8b34a' }
   };
 })(window.DK);

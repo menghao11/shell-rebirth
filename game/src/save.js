@@ -15,7 +15,7 @@
   DK.newRun = function () {
     const mx = DK.maxHp();
     return {
-      room: 0, hp: mx, maxHp: mx, weapons: ['pistol'], weapon: 'pistol',
+      stage: 1, room: 0, hp: mx, maxHp: mx, weapons: ['pistol'], weapon: 'pistol',
       mag: { pistol: DK.WEAPONS.pistol.mag, mg: DK.WEAPONS.mg.mag },
       ammoTypes: [], mods: {}, grenades: DK.PLAYER.grenades, dashCharges: DK.PLAYER.dashCharges,
       dmgMul: 1, dmgUps: 0, scrap: 0, kills: 0, startTime: Date.now(), taken: [],

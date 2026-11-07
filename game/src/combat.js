@@ -16,14 +16,15 @@
     const W = DK.W, H = DK.H, T = DK.WALL;
     const fk = opts.floor || 'floor', fs = DK.artSize(fk), ftex = (DK.ART[fk] && DK.ART[fk].tex) || fk;
     let floor;
-    const mix = /^tile_ground_concrete/.test(ftex) ? ['tile_ground_concrete_256', 'tile_ground_concrete_b_256', 'tile_ground_concrete_c_256'].filter(k => scene.textures.exists(k)) : [];
+    const mix = opts.floorMix ? opts.floorMix.map(k => (DK.ART[k] && DK.ART[k].tex) || k).filter(k => scene.textures.exists(k)) : /^tile_ground_concrete/.test(ftex) ? ['tile_ground_concrete_256', 'tile_ground_concrete_b_256', 'tile_ground_concrete_c_256'].filter(k => scene.textures.exists(k)) : [];
     if (mix.length > 1) {
       // concrete: pick a variant per cell (60/20/20) so the slabs don't repeat; baked into one RenderTexture
       const R = DK.R; // bake at device resolution so it stays sharp on retina
       floor = scene.add.renderTexture(0, 0, W * R, H * R).setOrigin(0).setScale(1 / R).setDepth(-100);
       const cw = fs[0], ch = fs[1], stamp = scene.make.image({ x: 0, y: 0, key: mix[0], add: false }).setOrigin(0);
       for (let y = 0; y < H; y += ch) for (let x = 0; x < W; x += cw) {
-        const r = Math.random(), k = r < 0.6 ? mix[0] : r < 0.8 ? mix[1] : mix[mix.length - 1];
+        const r = Math.random(), wts = opts.floorWeights || [0.6, 0.2, 0.2]; let acc = 0, k = mix[mix.length - 1];
+        for (let i = 0; i < mix.length; i++) { acc += wts[i] != null ? wts[i] : 0; if (r < acc) { k = mix[i]; break; } }
         stamp.setTexture(k).setDisplaySize(cw * R, ch * R); floor.draw(stamp, x * R, y * R);
       }
       stamp.destroy();
@@ -34,7 +35,7 @@
     }
     if (opts.tint) floor.setTint(opts.tint);
     const walls = scene.physics.add.staticGroup();
-    const wk = 'wall', ws = DK.artSize(wk), wt = scene.textures.get(wk).getSourceImage();
+    const wk = opts.wall || 'wall', ws = DK.artSize(wk), wt = scene.textures.get(wk).getSourceImage();
     const addWall = (x, y, w, h) => {
       const v = scene.add.tileSprite(x, y, w, h, wk).setOrigin(0).setDepth(-50);
       v.setTileScale(ws[0] / wt.width, ws[1] / wt.height);
@@ -74,7 +75,7 @@
       this.aimG = scene.add.graphics(); // aim guide: short facing stub (touch) / dotted precision line while aiming a burst
       this.precise = false; this.preciseAng = 0; this.burstQ = 0; this.burstT = 0; this.burstCd = 0; this.burstAng = 0; this.bursts = 0; this.dashes = 0;
       this.aimAng = 0; this.dashT = 0; this.dashDir = { x: 1, y: 0 }; this.dashCdT = 0; this.iframes = 0; this.fireCd = 0;
-      this.reloadT = 0; this.empowered = false; this.shots = 0; this.firingFor = 0; this.idleFire = 0;
+      this.reloadT = 0; this.powerShots = 0; this.poweredFired = 0; this.recycleN = 0; this.recycled = 0; this.shots = 0; this.firingFor = 0; this.idleFire = 0;
       this.charges = this.run ? this.run.dashCharges : P.dashCharges;
       this.grenadeAim = false; this.dead = false; this.god = !!DK.god;
       this.moveDir = { x: 1, y: 0 };
@@ -174,6 +175,7 @@
       const dashPressed = (k && (Phaser.Input.Keyboard.JustDown(k.SPACE) || Phaser.Input.Keyboard.JustDown(k.SHIFT))) || (tc && tc.consume && tc.consume('dash'));
       if (dashPressed && this.dashT <= 0 && this.charges > 0) {
         this.charges--; if (this.dashCdT <= 0) this.dashCdT = P.dashCd;
+        if (this.canFight) this.powerShots = P.passiveShots; // 马克被动: dash → next 3 shots +50 %
         this.dashT = P.dashTime; this.dashes++; this.dashDir = (mx || my) ? { x: this.moveDir.x, y: this.moveDir.y } : { x: Math.cos(this.aimAng), y: Math.sin(this.aimAng) };
         DK.sfx(s, 'dash');
       }
@@ -243,7 +245,11 @@
       if (!o.burst) this.fireCd = Math.max(this.fireCd, -1 / w.rate) + 1 / w.rate; // accumulate so 4/s and 10/s are exact (review P1-2)
       let dmg = w.dmg, crit = Math.random() < w.crit || (r.mods.fifth && this.shots % 5 === 0);
       if (crit) dmg *= DK.PLAYER.critMul;
-      const powered = false; // (the reload-empowered shot went away with reloading)
+      const powered = this.powerShots > 0; // 马克被动「冲锋射手」 (dash-charged shots)
+      if (powered) { this.powerShots--; this.poweredFired++; dmg *= DK.PLAYER.passiveMul; }
+      if (r.mods.recycle && ++this.recycleN >= 30) { // 弹壳回收: every 30 shots → +1 grenade (≤ 2 per room)
+        this.recycleN = 0; if (this.recycled < 2) { this.recycled++; r.grenades++; DK.floatText(s, this.x, this.y - 34, '弹壳回收 手雷+1', '#f2c14e', 14); DK.sfx(s, 'pickup_scrap', { volume: 0.5 }); }
+      }
       let a = base, home = null;
       if (!o.burst) { // auto-fire: weapon spread, then soft assist (start half-way toward the target and bend in flight)
         a += Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-w.spread, w.spread));
