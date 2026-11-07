@@ -55,7 +55,7 @@ window.DK = window.DK || {};
 
   // ---- boss 铁砧
   DK.BOSS = {
-    name: '铁砧', hp: 2200, phase2At: 1470, phase3At: 740, contact: 20, radius: 58,
+    name: '铁砧', hp: 3200, phase2At: 2140, phase3At: 1070, contact: 20, radius: 58,
     cannonDmg: 22, cannonSpeed: 620, cannonTele: 0.9,
     mgDmg: 5, mgSpeed: 300,
     mineDmg: 20, mineMax: 8, minionMax: 4,
@@ -68,7 +68,7 @@ window.DK = window.DK || {};
     //   Visible: "装甲 -XX%" on the boss bar + steel tint/outline when ≥ 15 %.
     // 装甲锁: safety floor — each phase lasts ≥ phaseMinT s; until then HP stops at the next phase line (phase 3: at 1 HP,
     //   with a big "装甲锁定 Xs 后可击毁" label). With the plate tuned as below it should rarely trigger.
-    plateDps: 20, platePow: 0.2, plateTau: 3,
+    plateDps: 20, platePow: 0.58, plateTau: 3, // N1 retest 3: 0.2 squashed upgrades (raw ×3.6 → eff ×1.3); 0.58 → eff ≈ raw^0.58 (×2.1 at ×3.6)
     phaseMinT: [14, 15, 10],
     homeY: 195, minY: 178, p3X: 480, p3Y: 215, p2MinY: 205
   };
@@ -120,7 +120,7 @@ window.DK = window.DK || {};
     ],
     // 沙鲸·流沙之喉 (boss_sandwhale). All timing is GAME time.
     boss: {
-      name: '沙鲸', title: '流沙之喉', hp: 2400, phase2At: 1600, phase3At: 800, contact: 22, radius: 60, phaseInvuln: 1.6,
+      name: '沙鲸', title: '流沙之喉', hp: 2750, phase2At: 1840, phase3At: 920, contact: 22, radius: 60, phaseInvuln: 1.6,
       // P1 潜沙: trail tell → burst + ram → surfaced (hittable) with a back-turret fan
       trailTell: 1.1, trailSpeed: 260, ramSpeed: 520, ramTime: 0.55, ramDmg: 24, surfaceT: 3.2, fanN: 5, fanSpread: 0.22, fanDmg: 7, fanSpeed: 260, fanEvery: 1.1,
       // P2 沙暴: visibility drop, spits jumpers/grenadiers, sand-stream sweeps
@@ -257,11 +257,12 @@ window.DK = window.DK || {};
     npc_lingjian_dock: { scale: 0.52, lift: 30, anims: { idle: 'lingjian_idle', talk: 'lingjian_talk' } },
     npc_merchant:  { scale: 0.36, lift: 30, anims: { idle: 'merchant_idle' } },
     // stage 2 (art/stage2/manifest.json — same frame size + feet anchor per set so switching never jumps)
-    enemy_camel:       { scale: 0.36, lift: 30, anims: { move: 'camel_move', attack: 'camel_shoot', charge: 'camel_charge', hurt: 'camel_hurt', death: 'camel_death', dismount: 'camel_dismount' } },
-    enemy_camel_rider: { scale: 0.33, lift: 22, anims: { move: 'camelrider_move', attack: 'camelrider_attack', hurt: 'camelrider_hurt', death: 'camelrider_death' } },
-    enemy_jumper:      { scale: 0.33, lift: 22, anims: { move: 'jumper_move', attack: 'jumper_attack', tell: 'jumper_crouch', jump: 'jumper_jump', hurt: 'jumper_hurt', death: 'jumper_death' } },
-    enemy_grenadier:   { scale: 0.33, lift: 22, anims: { move: 'grenadier_idle', walk: 'grenadier_move', attack: 'grenadier_throw', hurt: 'grenadier_hurt', death: 'grenadier_death' } }, // throw releases on frame 05 (10 fps)
-    boss_sandwhale:    { scale: 0.45, lift: 60, anims: { move: 'sandwhale_move', burrow: 'sandwhale_burrow', emerge: 'sandwhale_emerge', ram: 'sandwhale_ram', spit: 'sandwhale_spit', open: 'sandwhale_open', roll: 'sandwhale_roll', destroy: 'sandwhale_destroy' } }
+    // art/stage2 (画图王, integration_aliases.json): mounted 640x512 @ (320,490), humanoid 320x320 @ (160,300), deaths 512x320 @ (256,300)
+    enemy_camel:       { scale: 0.33, lift: 30, anims: { idle: 'camel_mounted_idle', move: 'camel_mounted_move', attack: 'camel_mounted_shoot', charge: 'camel_mounted_charge', hurt: 'camel_mounted_hurt', death: 'camel_mounted_death', dismount: 'camel_dismount' } },
+    enemy_camel_rider: { scale: 0.33, lift: 22, anims: { idle: 'camel_foot_idle', move: 'camel_foot_move', attack: 'camel_foot_attack', hurt: 'camel_foot_hurt', death: 'camel_foot_death' } },
+    enemy_jumper:      { scale: 0.33, lift: 22, anims: { idle: 'jumper_idle', move: 'jumper_move', attack: 'jumper_attack', tell: 'jumper_windup', jump: 'jumper_jump', landing: 'jumper_landing', hurt: 'jumper_hurt', death: 'jumper_death' } },
+    enemy_grenadier:   { scale: 0.33, lift: 22, anims: { idle: 'grenadier_idle', move: 'grenadier_move', attack: 'grenadier_throw', hurt: 'grenadier_hurt', death: 'grenadier_death' } }, // throw releases on frame 05 (10 fps)
+    boss_sandwhale:    { scale: 0.45, lift: 60, anims: { move: 'sandwhale_move', burrow: 'sandwhale_burrow', emerge: 'sandwhale_emerge', ram: 'sandwhale_ram', turret: 'sandwhale_turret', spit: 'sandwhale_spit', spray: 'sandwhale_spray', open: 'sandwhale_open', roll: 'sandwhale_roll', hurt: 'sandwhale_hurt', hurt_open: 'sandwhale_hurt_open', destroy: 'sandwhale_destroy' } }
   };
   // stage-2 obstacles/decor, keyed by art/stage2 asset name (画图王). scale = art px → game px; hit = footprint body [w,h]
   //   (null = decor, no collision, drawn under everything); ph = placeholder key while the art file is missing.

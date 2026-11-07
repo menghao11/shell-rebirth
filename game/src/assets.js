@@ -230,8 +230,9 @@
     const sk = obj.skin, rs = a.res_scale || 1, [fw, fh] = a.frame_size, [ax, ay] = a.anchor || [fw / 2, fh];
     const sc = sk.scale / rs;
     if (Math.abs(obj.scaleX - sc) > 1e-6) obj.setScale(sc);
-    obj.setOrigin((ax - (a.x_offset || 0)) / fw, (ay - sk.lift / sc) / fh);
-    if (obj._skinAnim === name) return; obj._skinAnim = name;
+    const dy = obj.renderDY || 0; // visual-only lift (art render_y_offsets: jump / dismount); the body stays on the ground point
+    obj.setOrigin((ax - (a.x_offset || 0)) / fw, (ay - sk.lift / sc - dy / sc) / fh);
+    if (obj._skinAnim === name && obj._skinDY === dy) return; obj._skinAnim = name; obj._skinDY = dy;
     if (obj.body && obj.bodyCircle) DK.setCircleBody(obj, obj.bodyCircle);
     else if (obj.body && obj.bodyRect) DK.setRectBody(obj, obj.bodyRect[0], obj.bodyRect[1]);
   };
@@ -251,7 +252,9 @@
   DK.animFrame = function (obj, state, frame) { // hold a single frame of a state (e.g. sniper aim)
     if (!obj || !obj.realSkin) return;
     const name = obj.skin.anims[state]; if (!name || !DK.hasArt(name)) return;
-    obj.anims.stop(); DK.skinOrigin(obj, name); obj.setTexture(name, frame);
+    const a = DK.ARTX[name], f = Math.max(0, Math.min((a.frame_count || 1) - 1, frame | 0)), off = a.render_y_offsets;
+    obj.renderDY = off ? (off[f] || 0) * obj.skin.scale / (a.res_scale || 1) : 0;
+    obj.anims.stop(); DK.skinOrigin(obj, name); obj.setTexture(name, f);
   };
 
   // Circle hitbox in logical px regardless of texture resolution.

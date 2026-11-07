@@ -74,7 +74,9 @@
     if (e.realSkin) {
       e.hurtT = (e.hurtT || 0) - dt; e.atkT = (e.atkT || 0) - dt;
       // attack frames are driven by the AI below (e.atkFrame) so shots land on the manifest's event frames
-      if (e.animOverride && e.skin.anims[e.animOverride]) DK.anim(e, e.animOverride);
+      if (!e.holdFrame && e.renderDY) e.renderDY = 0;
+      if (e.holdFrame) DK.animFrame(e, e.holdFrame[0], e.holdFrame[1]);
+      else if (e.animOverride && e.skin.anims[e.animOverride]) DK.anim(e, e.animOverride);
       else if (e.atkFrame != null) DK.animFrame(e, 'attack', e.atkFrame);
       else if (e.atkT > 0) DK.anim(e, 'attack');
       else if (e.hurtT > 0) DK.anim(e, 'hurt');

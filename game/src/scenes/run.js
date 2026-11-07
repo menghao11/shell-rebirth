@@ -74,7 +74,7 @@
       const nR = DK.roomsFor(run).length, bossName = this.boss ? this.boss.cfg.name : '铁砧';
       const label = this.tutorial ? '教学关' : (this.stage === 2 ? '第二关 · ' : '') + (room.type === 'boss' ? 'BOSS · ' + bossName : `房间 ${run.room + 1}/${nR - 1} · ${room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : room.name}`);
       DK.banner(this, label, { size: 30, color: room.type === 'boss' ? '#ff5a4e' : '#f2c14e', dur: 1400 });
-      if (this.stage === 2) { DK.music(this, room.type === 'boss' ? 's2_bgm_boss_desert' : 's2_bgm_desert'); DK.ambient(this, 's2_amb_desert_wind'); }
+      if (this.stage === 2) { DK.music(this, room.type === 'boss' ? (this.cache.audio.exists('s2_bgm_boss_desert_p1') ? 's2_bgm_boss_desert_p1' : 's2_bgm_boss_desert') : 's2_bgm_desert'); DK.ambient(this, 's2_amb_desert_wind'); }
       else { DK.music(this, room.type === 'boss' ? 'bgm_boss' : 'bgm_stage1'); DK.ambient(this, null); }
       const intro2 = this.stage === 2 && run.room === 0 && !run.s2Intro && !DK.skipIntro2; // 第二关 opening (story/stage2.json intro)
       if (intro2) { run.s2Intro = true; this.time.delayedCall(450, () => this.dlg.show(DK.lines(DK.story2.intro), () => {})); }
@@ -290,6 +290,7 @@
       if (o.boss) { // phase-3 ring: 1.5x, hot pink with a white rim so it reads on concrete (review P2-5)
         b.setTexture('ring_bullet').setDisplaySize(18, 18).setOrigin(0.5);
       }
+      if (o.art && DK.hasArt(o.art)) { const A = DK.ARTX[o.art]; b.setTexture(o.art, 0).setOrigin(0.5).setScale(o.artScale / (A.res_scale || 1)); if (this.anims.exists(o.art)) b.play(o.art); } else if (b.anims && b.anims.isPlaying) b.anims.stop();
       if (o.big) { const s0 = DK.artSize(key); b.setDisplaySize(s0[0] * 1.5, s0[1] * 1.1); b.setTint(0xffd0d0); }
       DK.setCircleBody(b, o.cannon ? 9 : o.boss ? 6 : 4.5);
       b.ring = !!o.boss;
@@ -394,19 +395,22 @@
       const run = this.run;
       if (src !== 'self') {
         if (!e.dismounted) run.kills++; // a dismounted rider is the same 沙蝎骑兵: one kill, no second reward
-        if (e.realSkin) this.corpse(e); else this.explode(e.x, e.y, 24, 0, { src: 'fx', visualOnly: true, size: 0.45, quiet: true });
+        const willDismount = e.etype === 'camel' && e.realSkin && DK.hasArt('camel_dismount') && src !== 'phase3' && src !== 'boss_dead' && this.state !== 'won' && this.state !== 'dead';
+        if (willDismount) { /* camel_dismount transition + s2_camel_corpse replace the death corpse */ } else if (e.realSkin) this.corpse(e); else this.explode(e.x, e.y, 24, 0, { src: 'fx', visualOnly: true, size: 0.45, quiet: true });
         DK.sfx(this, 'explosion_small', { volume: 0.55, minGap: 60 });
       }
       DK.logDamage({ src, tgt: e.etype, amt: 0, note: 'killed' });
       const dismount = e.etype === 'camel' && src !== 'self' && src !== 'phase3' && src !== 'boss_dead' && this.state !== 'won' && this.state !== 'dead';
-      const ex = e.x, ey = e.y;
+      const ex = e.x, ey = e.y, snap = dismount ? { x: ex, y: ey, flipX: e.flipX, depth: e.depth, realSkin: e.realSkin } : null;
       DK.removeEnemy(e);
       if (dismount) { // the camel falls, its rider jumps off and fights on foot (own HP; the camel paid the scrap/kill)
         DK.sfx(this, 's2_camel_groan_2', { minGap: 100 });
-        const q = this.spawnOk(ex, ey, 16) ? { x: ex, y: ey } : this.findSpawn(16, ex, ey);
-        const r = DK.spawnEnemy(this, 'camel_rider', q.x, q.y, { dismounted: true }); this.dismounts = (this.dismounts || 0) + 1;
-        const bark = DK.enemyBark('camel_rider'); if (bark) DK.speech(this, { speaker: 'camel_rider', text: DK.fmt(bark[1] || bark[0]) }, 1600);
-        DK.logDamage({ src: 'camel', tgt: 'camel_rider', amt: 0, note: 'dismount hp ' + r.hp });
+        DK.camelDismount(this, snap, (x, y, flip) => {
+          const q = this.spawnOk(x, y, 16) ? { x, y } : this.findSpawn(16, x, y);
+          const r = DK.spawnEnemy(this, 'camel_rider', q.x, q.y, { dismounted: true }); this.dismounts = (this.dismounts || 0) + 1; r.setAlpha(1); if (flip != null) r.setFlipX(flip);
+          const bark = DK.enemyBark('camel_rider'); if (bark) DK.speech(this, { speaker: 'camel_rider', text: DK.fmt(bark[1] || bark[0]) }, 1600);
+          DK.logDamage({ src: 'camel', tgt: 'camel_rider', amt: 0, note: 'dismount hp ' + r.hp });
+        });
       }
       this.time.delayedCall(10, () => this.enemies.remove(e));
     }
@@ -677,6 +681,16 @@
         this.dlg.show(DK.lines(first ? S.intro : (S.intro_short || S.intro)), () => { this.state = 'boss'; b.active = true; b.startTime = this.gameT; this.bossStart = this.gameT; DK.banner(this, S.name + ' · ' + S.title, { color: '#ffb04e', size: 30 }); });
       });
     }
+    dropEchoPod(b) { // 「马克·0号」: independent loot object (art: sandwhale_echo_pod_idle, spawned near the head on destroy frame 11)
+      const head = b.spr.flipX ? -1 : 1, px = Phaser.Math.Clamp(b.x + 110 * head, 120, DK.W - 120), py = Phaser.Math.Clamp(b.y + 110, 160, DK.H - 60); // in front of the head, clear of the wreck
+      let pod;
+      if (DK.hasArt('sandwhale_echo_pod_idle')) { const A = DK.ARTX.sandwhale_echo_pod_idle; pod = this.add.sprite(px, py, 'sandwhale_echo_pod_idle', 0).setOrigin(A.anchor[0] / A.frame_size[0], A.anchor[1] / A.frame_size[1]).setScale(0.3 / (A.res_scale || 1)); if (this.anims.exists('sandwhale_echo_pod_idle')) pod.play('sandwhale_echo_pod_idle'); }
+      else { pod = this.add.image(px, py, 'echo_pod_zero'); DK.applyArt(pod, 'echo_pod_zero'); }
+      pod.setDepth(py + 40).setAlpha(0); this.echoPod = pod;
+      const tag = DK.txt(this, px, py - 100, '「马克·0号」', { fontSize: '16px', color: '#9fe8ff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(1900).setAlpha(0); this.echoTag = tag;
+      this.tweens.add({ targets: [pod, tag], alpha: 1, duration: 500 });
+      DK.logDamage({ src: 'boss', tgt: '-', amt: 0, note: 'echo pod 马克·0号 dropped' });
+    }
     onBossDead(b) {
       this.state = 'won';
       const secs = (this.gameT - (this.bossStart || this.gameT)).toFixed(1); // game time (N1)
@@ -687,9 +701,11 @@
       if (this.stage === 2) { DK.clearEnemyGrenades(this); DK.setSandstorm(this, false); if (b.targetable === false) b.setBurrowed(false); b.lane = null; b.trail = null; b.spr.setAngle(0); }
       b.spr.setVelocity(0); b.spr.clearTint(); DK.anim(b.spr, 'destroy');
       for (let i = 0; i < 7; i++) this.time.delayedCall(i * 220, () => this.explode(b.x + rnd(-70, 70), b.y + rnd(-50, 50), 60, 0, { src: 'fx', size: 1 }));
+      const DA = DK.ARTX.sandwhale_destroy, podAt = this.stage === 2 && b.spr.realSkin && DA ? ((DA.event_frames || {}).drop_echo_pod || 11) / (DA.fps || 10) * 1000 : 1700;
+      if (this.stage === 2) this.time.delayedCall(podAt, () => this.dropEchoPod(b));
       this.time.delayedCall(1700, () => {
         if (!b.spr.realSkin) { b.spr.setTint(0x333333); b.turret.setTint(0x333333); }
-        if (this.stage === 2) { // the 回响舱 it swallowed rolls out: 「马克·0号」
+        if (false) { // the 回响舱 it swallowed rolls out: 「马克·0号」
           const px = Phaser.Math.Clamp(b.x + 90, 120, DK.W - 120), py = Phaser.Math.Clamp(b.y + 60, 160, DK.H - 80);
           const pod = this.add.image(px, py, 'echo_pod_zero'); DK.applyArt(pod, 'echo_pod_zero'); pod.setDepth(py + 40).setAlpha(0); this.echoPod = pod;
           const tag = DK.txt(this, px, py - 62, '「马克·0号」', { fontSize: '16px', color: '#9fe8ff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(1900).setAlpha(0); this.echoTag = tag;

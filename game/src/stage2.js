@@ -154,7 +154,7 @@
   DK.ENEMY_INIT.camel = (s, e) => { e.chargeT = 1.6 + Math.random(); e.groanT = rnd(...e.cfg.groanEvery); e.stepT = 0; e.chargeLog = []; e.gun.setVisible(!e.realSkin); };
   DK.ENEMY_INIT.camel_rider = (s, e) => { e.t = 0.9; };
   DK.ENEMY_INIT.jumper = (s, e) => { e.dodgeCd = e.cfg.dodgeFirst; e.dodges = 0; e.dodged = 0; e.hitsTaken = 0; e.threats = 0; e.dodgeLog = []; e.seen = new WeakSet(); e.airborne = false;
-    e.onFrozen = () => { if (e.state === 'jtell' || e.state === 'jump') { e.airborne = false; e.state = 'move'; e.animOverride = null; e.setScale(e.baseSX || e.scaleX, e.baseSY || e.scaleY); } }; };
+    e.onFrozen = () => { if (e.state === 'jtell' || e.state === 'jump') { e.airborne = false; e.holdFrame = null; e.state = 'move'; e.animOverride = null; e.setScale(e.baseSX || e.scaleX, e.baseSY || e.scaleY); } }; };
   DK.ENEMY_INIT.grenadier = (s, e) => { e.gun.setVisible(false); e.throwT = 1.4 + Math.random() * 0.8; };
 
   // shared ranged-move helper (keep a ring distance, strafe)
@@ -242,7 +242,8 @@
     e.dodgeCd -= dt;
     if (e.state === 'jtell') {
       e.setVelocity(0); e.tellLeft -= dt; e.animOverride = 'tell';
-      if (!e.realSkin) e.setScale(e.baseSX * 1.12, e.baseSY * 0.82); // crouch
+      if (e.realSkin) e.holdFrame = ['tell', Math.floor((1 - e.tellLeft / c.dodgeTell) * 4)]; // jumper_windup 00-03 over the tell
+      else e.setScale(e.baseSX * 1.12, e.baseSY * 0.82); // crouch
       if (e.tellLeft <= 0) {
         e.state = 'jump'; e.airborne = true; e.jumpLeft = c.dodgeTime; e.animOverride = 'jump';
         e.setVelocity(e.jdx * c.dodgeDist / c.dodgeTime, e.jdy * c.dodgeDist / c.dodgeTime);
@@ -253,7 +254,8 @@
     }
     if (e.state === 'jump') {
       e.jumpLeft -= dt; const k = 1 - e.jumpLeft / c.dodgeTime, lift = Math.sin(Math.min(1, k) * Math.PI);
-      if (!e.realSkin) e.setScale(e.baseSX * (1 + 0.25 * lift), e.baseSY * (1 + 0.25 * lift));
+      if (e.realSkin) e.holdFrame = ['jump', 1 + Math.floor(Math.min(0.999, k) * 7)]; // jumper_jump 01-07 (+ render_y_offsets) over the leap
+      else e.setScale(e.baseSX * (1 + 0.25 * lift), e.baseSY * (1 + 0.25 * lift));
       e.setVelocity(e.jdx * c.dodgeDist / c.dodgeTime, e.jdy * c.dodgeDist / c.dodgeTime);
       if (e.jumpLeft <= 0) {
         e.airborne = false; e.state = 'recover'; e.recLeft = c.recoverT; e.dodgeCd = c.dodgeCd; e.setVelocity(0); e.animOverride = null;
@@ -264,8 +266,8 @@
       }
       return;
     }
-    if (e.state === 'recover') { e.recLeft -= dt; e.setVelocity(0); if (e.recLeft <= 0) { e.state = 'move'; e.t = Math.max(e.t, 0.3); } return; }
-    e.animOverride = null;
+    if (e.state === 'recover') { e.recLeft -= dt; e.setVelocity(0); if (e.realSkin) e.holdFrame = e.recLeft > 0 ? ['landing', Math.floor((1 - e.recLeft / c.recoverT) * 4)] : null; if (e.recLeft <= 0) e.holdFrame = null; if (e.recLeft <= 0) { e.state = 'move'; e.t = Math.max(e.t, 0.3); } return; }
+    e.animOverride = null; e.holdFrame = null;
     if (e.dodgeCd <= 0 && (e.state === 'move' || e.state === 'tell')) {
       const th = jumperThreat(scene, e, c);
       if (th) {
@@ -365,6 +367,26 @@
     }
   };
   DK.clearEnemyGrenades = function (scene) { (scene.eGrenades || []).forEach(gr => { if (gr.alive) { gr.alive = false; gr.spr.destroy(); gr.sh.destroy(); } }); scene.eGrenades = []; };
+
+  // ------------------------------------------------------------ 骆驼 dismount (art: camel_dismount 10 f @12 fps; corpse at 04, foot actor at 09)
+  DK.camelDismount = function (scene, e, spawnRider) {
+    const A = DK.ARTX.camel_dismount;
+    if (!e.realSkin || !DK.hasArt('camel_dismount')) return spawnRider(e.x, e.y);
+    const sk = DK.SKINS.enemy_camel, x = e.x, y = e.y, flip = e.flipX, ev = A.event_frames || { spawn_corpse: 4, switch_to_foot: 9 };
+    const t = scene.add.sprite(x, y, 'camel_dismount', 0).setFlipX(flip); t.skin = sk; t.realSkin = true; t.setDepth(e.depth);
+    scene.pending++; let corpse = null, f0 = -1;
+    const setF = f => { t.renderDY = (A.render_y_offsets || [])[f] * sk.scale || 0; t._skinAnim = null; DK.skinOrigin(t, 'camel_dismount'); t.setTexture('camel_dismount', f); };
+    setF(0);
+    const tick = scene.time.addEvent({ delay: 1000 / (A.fps || 12), repeat: A.frame_count - 1, callback: () => {
+      const f = Math.min(A.frame_count - 1, ++f0 + 1);
+      setF(f); DK.s2log.camel.push({ t: scene.gameT, ev: 'dismount_f' + f, feetY: Math.round(t.getBounds().bottom), dy: Math.round(t.renderDY) });
+      if (f === ev.spawn_corpse && DK.hasArt('s2_camel_corpse') && !corpse) { // independent fallen camel, same ground origin, behind the rider
+        const C = DK.ARTX.s2_camel_corpse; corpse = scene.add.image(x, y + sk.lift, 's2_camel_corpse').setOrigin((flip ? C.frame_size[0] - C.anchor[0] : C.anchor[0]) / C.frame_size[0], C.anchor[1] / C.frame_size[1]).setFlipX(flip).setScale(sk.scale * (C.recommended_render_scale_multiplier || 0.9) / (C.res_scale || 1)).setDepth(y - 1);
+        scene.tweens.add({ targets: corpse, alpha: 0, delay: 6000, duration: 800, onComplete: () => corpse.destroy() });
+      }
+      if (f >= (ev.switch_to_foot || A.frame_count - 1)) { tick.remove(); t.destroy(); scene.pending--; if (scene.state !== 'won' && scene.state !== 'dead') spawnRider(x, y + sk.lift - DK.SKINS.enemy_camel_rider.lift, flip); } // keep world feet
+    } });
+  };
 
   // ------------------------------------------------------------ per-frame stage-2 hook (run.update)
   DK.updateStage2 = function (scene, dt) { DK.updateEnemyGrenades(scene, dt); };
