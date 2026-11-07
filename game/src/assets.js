@@ -116,11 +116,19 @@
     const P = DK.PATHS; DK.assetReport.stage2 = { art: 0, audio: 0, story: false };
     const files = await listDir(P.art2);
     const man = (files === null || (files && files.includes('manifest.json'))) ? await fetchJson(P.art2 + 'manifest.json') : null;
+    // downscaled atlases at ~display scale (tools/build_web_art2.py): ~4x less GPU memory; used when src_sig matches
+    const wl = man ? await listDir(P.artWeb2Dir) : null;
+    const web = man && (wl === null || wl.includes('manifest.json')) ? await fetchJson(P.artWeb2Dir + 'manifest.json') : null;
+    const webBy = {}; if (web && Array.isArray(web.assets)) for (const w of web.assets) webBy[w.name] = w;
+    DK.assetReport.stage2.web = { used: 0, stale: 0 };
     if (man && Array.isArray(man.assets)) for (const a0 of man.assets) {
       if (!a0 || !a0.name) continue;
-      const a = Object.assign({ res_scale: 1, x_offset: 0 }, a0), fs = a.frame_size || null, n = a.frame_count || 1;
+      if (/_reference$/.test(a0.name)) continue; // art-review references, never drawn
+      const w = webBy[a0.name], sigv = JSON.stringify([a0.sheet || null, (a0.frames || [null])[0], a0.frame_size, a0.frame_count || 1, a0.anchor]);
+      const useWeb = !!(w && w.src_sig === sigv && !DK.noWebArt); if (w && !useWeb) DK.assetReport.stage2.web.stale++; if (useWeb) DK.assetReport.stage2.web.used++;
+      const a = useWeb ? Object.assign({}, a0, w) : Object.assign({ res_scale: 1, x_offset: 0 }, a0), fs = a.frame_size || null, n = a.frame_count || 1;
       const url = n > 1 && a.sheet && fs ? a.sheet : (a.file || (a.frames && a.frames[0]) || a.sheet); if (!url) continue;
-      DK.ARTX[a.name] = a; plan.images.push({ key: a.name, url: P.art2 + url, frames: n > 1 && a.sheet && fs ? { w: fs[0], h: fs[1] } : null }); seen.add(a.name); DK.assetReport.stage2.art++;
+      DK.ARTX[a.name] = a; plan.images.push({ key: a.name, url: (useWeb ? P.artWeb2Dir : P.art2) + url, frames: n > 1 && a.sheet && fs ? { w: fs[0], h: fs[1] } : null }); seen.add(a.name); DK.assetReport.stage2.art++;
     }
     if (files) for (const f of files) { // loose stage-2 images named after a game key (art/stage2/prop_cactus.png ...)
       if (!IMG_EXT.includes(ext(f))) continue; const key = base(f);
@@ -253,7 +261,7 @@
     if (!obj || !obj.realSkin) return;
     const name = obj.skin.anims[state]; if (!name || !DK.hasArt(name)) return;
     const a = DK.ARTX[name], f = Math.max(0, Math.min((a.frame_count || 1) - 1, frame | 0)), off = a.render_y_offsets;
-    obj.renderDY = off ? (off[f] || 0) * obj.skin.scale / (a.res_scale || 1) : 0;
+    obj.renderDY = off ? (off[f] || 0) * obj.skin.scale : 0; // source px → world px
     obj.anims.stop(); DK.skinOrigin(obj, name); obj.setTexture(name, f);
   };
 

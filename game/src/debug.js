@@ -9,6 +9,7 @@
     const R = DK.roomsFor(DK.run); DK.run.room = Math.max(0, Math.min(R.length - 1, idx));
     if (shopType) DK.run.shopType = shopType;
     ['Base', 'Result', 'Run'].forEach(k => { if (g.scene.isActive(k) && k !== 'Run') g.scene.stop(k); });
+    { const rs = g.scene.getScene('Run'); if (rs) for (const m of ['nextWave', 'spawnWithTelegraph', 'containEnemies', 'fireBullet']) if (Object.prototype.hasOwnProperty.call(rs, m)) delete rs[m]; } // tests stub these on the (reused) scene object; a fresh room gets the real methods back
     if (g.scene.isActive('Run')) g.scene.getScene('Run').scene.restart(); else g.scene.start('Run');
     return `→ stage ${DK.run.stage || 1} room ${DK.run.room + 1} (${R[DK.run.room].type})`;
   }
@@ -50,7 +51,7 @@
       const s = inRun(); if (!s) return 'not in a room';
       if (s.state === 'fight') { s.wave = (s.room.waves || []).length; }
       s.enemies.getChildren().slice().forEach(e => e.alive && s.killEnemy(e, 'dbg'));
-      s.pending = 0; return 'room skipped';
+      s.spawnGen = (s.spawnGen || 0) + 1; return 'room skipped'; // cancel queued telegraphs (they still decrement pending themselves; zeroing it here drove it negative → room never cleared)
     },
     wave() { const s = inRun(); if (!s) return 'not in a room'; s.enemies.getChildren().slice().forEach(e => e.alive && s.killEnemy(e, 'dbg')); return 'wave cleared'; },
     reward() { const s = inRun(); if (!s) return 'not in a room'; if (s.modal) return 'a modal is already open'; s.offerReward('调试 · 三选一'); return s.rewardOpen; },
@@ -86,7 +87,7 @@
       if (r) Object.assign(o, { room: r.room + 1, stage: r.stage || 1, roomType: (DK.roomsFor(r)[r.room] || {}).type, special: r.special2 ? r.special2.kind : null, hp: r.hp, maxHp: r.maxHp, weapon: r.weapon, mag: r.mag[r.weapon], ammoTypes: r.ammoTypes.slice(), mods: Object.keys(r.mods), grenades: r.grenades, scrap: r.scrap, kills: r.kills, taken: r.taken.slice() });
       if (key === 'Run') Object.assign(o, { state: s.state, wave: s.wave + 1, enemies: s.enemies.getChildren().filter(e => e.alive).length, pending: s.pending, doorOpen: !!(s.door && s.door.open), modal: !!s.modal, dialogue: s.dlg.active, player: { x: Math.round(s.player.x), y: Math.round(s.player.y) },
         tutorial: s.tut ? (s.tut.step ? s.tut.step.id : 'done') : null, aim: { precise: s.player.precise, bursts: s.player.bursts, burstCd: +s.player.burstCd.toFixed(2), assisted: s.player.assisted || 0 },
-        boss: s.boss ? { name: s.boss.cfg.name, hp: Math.round(s.boss.hp), phase: s.boss.phase, active: s.boss.active, alive: s.boss.alive, mode: s.boss.mode || null, targetable: s.boss.targetable !== false } : null, escapes: s.escapes || 0, grenadesLive: (s.eGrenades || []).length });
+        boss: s.boss ? { name: s.boss.cfg.name, hp: Math.round(s.boss.hp), phase: s.boss.phase, active: s.boss.active, alive: s.boss.alive, mode: s.boss.mode || null, targetable: s.boss.targetable !== false } : null, escapes: s.escapes || 0, nudges: s.nudges || 0, grenadesLive: (s.eGrenades || []).length });
       if (key === 'Base') Object.assign(o, { dialogue: s.dlg.active, modal: !!s.modal, player: { x: Math.round(s.player.x), y: Math.round(s.player.y) } });
       return o;
     },

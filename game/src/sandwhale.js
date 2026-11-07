@@ -70,7 +70,7 @@
       if (spr.realSkin) {
         const a = DK.ARTX[spr.texture.key], fr = a && a.core_weakpoint_frames && a.core_weakpoint_frames[+spr.frame.name];
         if (fr && fr.visible && fr.center && fr.cyan_pixels > 100) this._coreC = fr.center;
-        const c = this._coreC || [478, 487], sx = spr.scaleX, ox = spr.displayOriginX, oy = spr.displayOriginY;
+        const rs = (a && a.res_scale) || (DK.ARTX.sandwhale_open || {}).res_scale || 1, c0 = this._coreC || [478, 487], c = [c0[0] * rs, c0[1] * rs], sx = spr.scaleX, ox = spr.displayOriginX, oy = spr.displayOriginY;
         return { x: spr.x + (spr.flipX ? -(c[0] - ox) : c[0] - ox) * sx, y: spr.y + (c[1] - oy) * spr.scaleY };
       }
       return { x: spr.x + (spr.flipX ? 10 : -10), y: spr.y - 4 };

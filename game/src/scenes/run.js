@@ -250,8 +250,10 @@
     containEnemies() { // hard guard: Arcade skips wall separation when an overlap is deeper than one frame's motion (crowd/boss push, knockback), so pull escapees back
       this.enemies.getChildren().forEach(e => {
         if (!e.alive || !e.body) return; const r = e.cfg.radius;
-        if (this.inArena(e.x, e.y, r - 3)) return;
-        const p = this.clampArena(e.x, e.y, r); e.body.reset(p.x, p.y); e.stuckT = 0; this.escapes = (this.escapes || 0) + 1;
+        const bc = e.body.center; if (this.inArena(e.x, e.y, r - 3) || this.inArena(bc.x, bc.y, Math.min(r, e.body.halfWidth) - 3)) return; // the physics body is what collides
+        const p = this.clampArena(e.x, e.y, r);
+        if (this.inArena(e.x, e.y, r * 0.5)) { e.body.reset(p.x, p.y); this.nudges = (this.nudges || 0) + 1; return; } // ≤ ½r crowd squeeze against a wall: corrected before render, not an escape
+        (this.escapeLog = this.escapeLog || []).push({ t: e.etype, st: e.state || e.mode || '-', x: Math.round(e.x), y: Math.round(e.y), vx: Math.round(e.body.velocity.x), vy: Math.round(e.body.velocity.y) }); e.body.reset(p.x, p.y); e.stuckT = 0; this.escapes = (this.escapes || 0) + 1;
       });
     }
     targets() {

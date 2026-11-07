@@ -18,6 +18,8 @@
     const c = DK.ENEMIES[type], key = 'enemy_' + type;
     const e = scene.physics.add.sprite(x, y, key); DK.applySkin(e, key);
     DK.setCircleBody(e, c.radius); e.setCollideWorldBounds(true);
+    // enemies are bounded by the ARENA (inside the walls): world-bounds collision never skips like deep wall overlaps do (crowd push / charges)
+    if (e.body.setBoundsRectangle) { scene._arenaRect = scene._arenaRect || new Phaser.Geom.Rectangle(DK.WALL + 4, DK.WALL + 4, DK.W - 2 * DK.WALL - 8, DK.H - 2 * DK.WALL - 8) /* 4 px inset absorbs same-frame crowd push */; e.body.setBoundsRectangle(scene._arenaRect); }
     const hp = Math.round(c.hp * (DK.enemyHpMul ? DK.enemyHpMul(scene) : 1));
     Object.assign(e, { isEnemy: true, etype: type, cfg: c, hp, maxHp: hp, radius: c.radius, alive: true,
       st: { burn: 0, burnT: 0, burnTick: 0, frz: 0, frozenT: 0, immuneT: 0, steamCd: 0 },

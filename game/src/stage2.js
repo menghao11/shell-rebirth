@@ -102,6 +102,7 @@
         const name = pick(group), C = DK.PROPS2[name], [w, h] = C.hit || [90, 40];
         const x = Phaser.Math.Between(C.hit ? 200 : 110, W - (C.hit ? 180 : 110)), y = Phaser.Math.Between(C.hit ? 110 : 70, H - (C.hit ? 90 : 50));
         if (C.hit) {
+          { const m = DK.WALL, gaps = [x - w / 2 - m, W - m - (x + w / 2), y - h / 2 - m, H - m - (y + h / 2)]; if (gaps.some(gp => gp < 60)) continue; } // no wall pinch: an enemy (≤ Ø44) wedged between prop and wall gets squeezed through the wall
           if (Math.abs(y - H / 2) < 80 && x > W - 260) continue; // door lane
           if (x < 170 && Math.abs(y - H / 2) < 90) continue;      // entry
           if (opts.hostage && Math.hypot(x - W * 0.62, y - H / 2) < 120) continue;
@@ -114,11 +115,11 @@
     place('dune', 2, 0); place('bones', 2, 0);
     if (opts.boss) { place('cactus', 2, 80); place('rock', 1, 90); return; }
     place('tank', Phaser.Math.Between(1, 2), 60); place('tent', Phaser.Math.Between(0, 1), 70); place('cactus', Phaser.Math.Between(2, 3), 50); place('rock', Phaser.Math.Between(0, 1), 60);
-    for (let i = 0, t = 0; i < 1 && t < 60; t++) { const x = Phaser.Math.Between(220, W - 160), y = Phaser.Math.Between(80, H - 80); if (!scene.rectFree(x, y, 30, 34, 50)) continue; scene.addBarrel(x, y); i++; }
+    for (let i = 0, t = 0; i < 1 && t < 60; t++) { const x = Phaser.Math.Between(220, W - 160), y = Phaser.Math.Between(108, H - 108); if (!scene.rectFree(x, y, 30, 34, 50)) continue; /* ≥60 px from walls: no pinch */ scene.addBarrel(x, y); i++; }
   };
   // wind-blown sand: a light constant stream (heavier in the boss's 沙暴 phase)
   DK.desertWind = function (scene) {
-    const real = DK.hasArt('s2_sand_streak'), tk = real ? 's2_sand_streak' : 'sand_mote', k = real ? 0.14 : 1; scene.moteK = k; scene.moteTex = tk;
+    const real = DK.hasArt('s2_sand_streak'), tk = real ? 's2_sand_streak' : 'sand_mote', k = real ? 0.14 / (DK.ARTX.s2_sand_streak.res_scale || 1) : 1; scene.moteK = k; scene.moteTex = tk;
     const em = scene.add.particles(0, 0, tk, {
       x: { min: -40, max: DK.W * 0.7 }, y: { min: -20, max: DK.H + 20 }, lifespan: { min: 2600, max: 4200 },
       speedX: { min: 130, max: 240 }, speedY: { min: 5, max: 45 }, alpha: { start: 0.55, end: 0 }, scale: { min: 0.7 * k, max: 1.6 * k },
@@ -128,7 +129,7 @@
     if (DK.hasArt('s2_blowing_sand')) { // drifting sand gusts (12-frame sheet)
       scene.time.addEvent({ delay: 2600, loop: true, callback: () => {
         if (scene.isPaused && scene.isPaused()) return;
-        const g = scene.add.sprite(Phaser.Math.Between(60, DK.W - 200), Phaser.Math.Between(60, DK.H - 60), 's2_blowing_sand').setDepth(879).setAlpha(0.55).setScale(0.7);
+        const g = scene.add.sprite(Phaser.Math.Between(60, DK.W - 200), Phaser.Math.Between(60, DK.H - 60), 's2_blowing_sand').setDepth(879).setAlpha(0.55).setScale(0.7 / ((DK.ARTX.s2_blowing_sand || {}).res_scale || 1));
         g.play('s2_blowing_sand'); scene.tweens.add({ targets: g, x: g.x + 120, duration: 1000 }); g.once('animationcomplete', () => g.destroy());
       } });
     }

@@ -5,11 +5,12 @@ window.DK = window.DK || {};
   DK.W = 960; DK.H = 540;           // logical play-field size (one room = one screen)
   DK.M = 32;                        // 1 meter (design doc) = 32 logical px
   DK.R = Math.min(window.devicePixelRatio || 1, 2); // render scale for crisp text on retina
+  { const q = new URLSearchParams(location.search); if (q.has('r')) DK.R = Math.max(1, Math.min(2, parseFloat(q.get('r')) || DK.R)); DK.noWebArt = q.has('noweb'); } // test switches: ?r=1.5 render scale, ?noweb full-res stage-2 art
   DK.FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif';
   DK.WALL = 28;                     // arena wall thickness
 
   // ---- paths (relative to game/index.html). Missing files fall back to placeholders.
-  DK.PATHS = { art: '../art/', artWebDir: 'assets/art_web/', audio: '../audio/', story: '../story/story.json',
+  DK.PATHS = { art: '../art/', artWebDir: 'assets/art_web/', artWeb2Dir: 'assets/art_web2/', audio: '../audio/', story: '../story/story.json',
     art2: '../art/stage2/', audio2: '../audio/stage2/', story2: '../story/stage2.json', audio2Prefix: 's2_' }; // stage 2 drops in here (data-driven, no code change)
 
   // ---- touch controls (logical px; iPhone landscape ≈ 1.4 logical px per pt). Buttons are laid out in run.js / base.js.
@@ -112,9 +113,9 @@ window.DK = window.DK || {};
                      blastRadius: 64, dmg: 22, releaseFrame: 5, maxHpFrac: 0.35, maxLive: 4, shootable: true, scrap: 2 }
     },
     rooms: [
-      { type: 'combat',  name: '流沙谷', waves: [{ charger: 2, rifle: 1, jumper: 1 }, { jumper: 2, grenadier: 1, charger: 1 }] },
-      { type: 'combat',  name: '骆驼道', waves: [{ camel: 1, rifle: 2 }, { camel: 1, jumper: 1, grenadier: 1 }] },
-      { type: 'combat',  name: '油罐场', waves: [{ grenadier: 2, jumper: 1, heavy: 1 }, { camel: 1, jumper: 2, grenadier: 1 }] },
+      { type: 'combat',  name: '流沙谷', waves: [{ charger: 3, rifle: 1, jumper: 1 }, { jumper: 2, grenadier: 1, charger: 1 }, { charger: 3, rifle: 2, grenadier: 1 }] },
+      { type: 'combat',  name: '骆驼道', waves: [{ camel: 1, rifle: 2 }, { camel: 1, jumper: 1, grenadier: 1 }, { jumper: 2, rifle: 2, charger: 1 }] },
+      { type: 'combat',  name: '油罐场', waves: [{ grenadier: 2, jumper: 1, heavy: 1 }, { camel: 1, jumper: 2, grenadier: 1 }, { rifle: 2, jumper: 1 }] },
       { type: 'special', name: '沙丘营地' },  // hostage / merchant / rest (rolled per run: run.special2)
       { type: 'boss',    name: '沙鲸' }
     ],
