@@ -16,6 +16,10 @@
   "fx": "Explosion 256x256 centre anchor; muzzle flash 128x96 anchor (4,48) at the muzzle, points right; impact spark 96x96 centre.",
   "ui": "Icons 128x128, subject fit in 112, centre anchor; scale to 32–64 for HUD.",
   "naming": "<entity>_<anim>_<NN>.png frames + <entity>_<anim>_sheet.png horizontal strip (frame_count x 1, same frame size). Single sprites have no index.",
+  "walls_doors": "walls/: `wall` (game key) = 256x256 opaque top-of-wall texture (dark concrete blocks + steel rivet plates), seamless on BOTH axes so one texture fills the horizontal and vertical 28-px wall strips as a tileSprite; 256 px = DK.ART.wall 64 logical px (4x), `wall_128` is the 2x box-downscale. `door` (game key) = 112x440 opaque closed steel blast gate for the right-wall exit, exactly 4x the 28x110 logical gap (DK.WALL x gap), painted over the wall texture so its edges blend into the wall strips; centre anchor (56,220); the code hides it when the door opens.",
+  "campfire": "props/campfire_NN.png: 8-frame seamless loop, 256x256, anchor (128,244) bottom-centre (stone-ring ground contact), 10 fps. Frames are sampled every 9th frame of a Grok video whose first and last frame were pinned to the same still, so 07 -> 00 wraps without a jump; stones/logs/pot are pixel-static, only flames and embers move.",
+  "portraits": "Dialogue busts are 512x512 transparent, anchor (256,512), bottom edge = bust cut, face right: laoqiang/lingjian/merchant + mark_portrait (马克中士), hostage_portrait (人质), anvil_portrait (铁砧 turret close-up for 【广播】 lines). The game picks them up via DK.PORTRAIT_ART (<speaker>_portrait). Speaker 'system' intentionally has no portrait.",
+  "shield": "`shield` (game key): enemies/heavy/heavy_shield.png, trimmed 95x160 standalone riot shield matching the one painted into heavy_*, upright with its face toward +x; centre anchor; rotate to the heavy's facing. Only shown by the game while the heavy has no real sprite.",
   "pipeline": "Grok Imagine (sprite-gen gen --provider grok) on #00FF00 key with one reference image per character for every animation sheet → sprite-gen slice-sheet (chroma alpha + shared baseline) / sprite-gen cutout → art_src/finalize.py (feet-anchor alignment, haze/speck cleanup, despill, edge fade) → verify.py. Smoothed animations (8-frame cycles, 6-frame attacks, etc.) come from sprite-gen Pipeline B: sprite-gen video-set with each character's same reference image (Grok video on a green key) → video frames → keyed frames → art_src/video_to_cuts.py, which picks loop frames by period fit and one-shot frames by arc-length (with manual picks in video_pick_overrides.json) and scales to the character height. idle, shoot_mg, reload, NPC idles and hostage are still from image sheets."
  },
  "assets": [
@@ -2091,6 +2095,162 @@
    "file": "tiles/tile_ground_grass_128.png",
    "res_scale": 1.0,
    "src_sig": "[null,\"tiles/tile_ground_grass_128.png\",[128,128],1,[0,0]]"
+  },
+  {
+   "name": "mark_portrait",
+   "group": "hero/马克中士 Sgt. Mark",
+   "frame_size": [
+    358,
+    358
+   ],
+   "frame_count": 1,
+   "anchor": [
+    179.2,
+    358.4
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dialogue portrait, bust, faces right (flipX to face left); bottom edge is the bust cut; used for speaker 'mark' via DK.PORTRAIT_ART",
+   "file": "characters/hero/mark_portrait.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"characters/hero/mark_portrait.png\",[512,512],1,[256,512]]"
+  },
+  {
+   "name": "hostage_portrait",
+   "group": "npc/人质 Hostage",
+   "frame_size": [
+    358,
+    358
+   ],
+   "frame_count": 1,
+   "anchor": [
+    179.2,
+    358.4
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dialogue portrait, bust, faces right (flipX to face left); bottom edge is the bust cut; used for speaker 'hostage' via DK.PORTRAIT_ART",
+   "file": "npc/hostage/hostage_portrait.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"npc/hostage/hostage_portrait.png\",[512,512],1,[256,512]]"
+  },
+  {
+   "name": "anvil_portrait",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    384,
+    384
+   ],
+   "frame_count": 1,
+   "anchor": [
+    192.0,
+    384.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "dialogue portrait, bust, faces right (flipX to face left); bottom edge is the bust cut; turret close-up with red optics, for the 【广播】 boss lines (speaker 'anvil')",
+   "file": "boss/anvil_portrait.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"boss/anvil_portrait.png\",[512,512],1,[256,512]]"
+  },
+  {
+   "name": "shield",
+   "group": "enemy/重装兵 Heavy shield trooper (150HP, front shield)",
+   "frame_size": [
+    66,
+    112
+   ],
+   "frame_count": 1,
+   "anchor": [
+    32.9,
+    56.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "standalone riot shield (game key 'shield'): upright, face toward +x (right); rotate to the facing angle and place in front of the body; centre anchor. Also usable as a dropped-shield prop. Note: the game hides it while the heavy uses its real sprite (the shield is painted into heavy_*)",
+   "file": "enemies/heavy/heavy_shield.png",
+   "res_scale": 0.7,
+   "src_sig": "[null,\"enemies/heavy/heavy_shield.png\",[95,160],1,[47,80]]"
+  },
+  {
+   "name": "wall",
+   "group": "walls/墙与门 room walls & doors",
+   "frame_size": [
+    192,
+    192
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "room wall (game key 'wall'): top of a dark concrete-block fortification wall with steel rivet plates; seamless on both axes, so it fills the 28-px horizontal AND vertical wall strips as a tileSprite (DK.ART.wall 64x64 logical = 4x); opaque by design",
+   "opaque": true,
+   "file": "walls/wall_256.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"walls/wall_256.png\",[256,256],1,[0,0]]"
+  },
+  {
+   "name": "wall_128",
+   "group": "walls/墙与门 room walls & doors",
+   "frame_size": [
+    96,
+    96
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "same wall texture box-downscaled to 128x128 (2x for a 64-px logical tile); seamless both axes; opaque by design",
+   "opaque": true,
+   "file": "walls/wall_128.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"walls/wall_128.png\",[128,128],1,[0,0]]"
+  },
+  {
+   "name": "door",
+   "group": "walls/墙与门 room walls & doors",
+   "frame_size": [
+    84,
+    330
+   ],
+   "frame_count": 1,
+   "anchor": [
+    42.0,
+    165.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "room exit door (game key 'door'): closed steel blast gate in the RIGHT wall, vertical; drawn 4x the 28x110 logical gap (DK.WALL x gap) so it maps 1:1 to the wall tile density; the gate sits on the wall texture so its edges blend into the wall strips; centre anchor; hidden in code when the room is cleared (door open)",
+   "opaque": true,
+   "file": "walls/door.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"walls/door.png\",[112,440],1,[56,220]]"
+  },
+  {
+   "name": "campfire",
+   "group": "props/篝火 campfire (休息站 rest stop)",
+   "frame_size": [
+    192,
+    192
+   ],
+   "frame_count": 8,
+   "anchor": [
+    96.0,
+    183.0
+   ],
+   "fps": 10,
+   "loop": true,
+   "purpose": "rest-stop campfire (game key 'campfire'): stone ring, logs, tin coffee pot; flames flicker in a seamless 8-frame loop (frames sampled evenly from a first/last-pinned video, so 07 -> 00 wraps cleanly); anchor bottom-centre = stone ring ground contact",
+   "sheet": "props/campfire_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "res_scale": 0.75,
+   "src_sig": "[\"props/campfire_sheet.png\",\"props/campfire_00.png\",[256,256],8,[128,244]]"
   }
  ]
 }
