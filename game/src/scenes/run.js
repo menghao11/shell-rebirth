@@ -15,11 +15,19 @@
       Object.assign(this, { leaving: false, rewardOpen: false, restUsed: false, merchantTalked: false, sold: {}, hostage: null, hostageFreed: false,
         merchantSpr: null, _waveWait: false, sparkCount: 0, bossStart: 0, pauseUI: null, touch: null, modal: null, pausedFlag: false, _immuneT: 0, gameT: 0, tut: null });
       DK.setupCamera(this);
-      const run = this.run, room = this.tutorial ? { type: 'tutorial', name: '教学关' } : DK.ROOMS[run.room], W = DK.W, H = DK.H;
+      const run = this.run, W = DK.W, H = DK.H;
+      this.stage = DK.stageOf(this); this.eGrenades = []; this.windFx = null; this.stormFx = null; this.stormVeil = null; this.spawnGen = 0;
+      let room = this.tutorial ? { type: 'tutorial', name: '教学关' } : DK.roomsFor(run)[run.room];
+      if (room.type === 'special') { // 第二关 special room: hostage / merchant / rest (rolled once per visit)
+        if (!run.special2 || run.special2.room !== run.room) run.special2 = { room: run.room, kind: DK.STAGE2.forceSpecial || Phaser.Utils.Array.GetRandom(['hostage', 'merchant', 'rest']) };
+        const k = run.special2.kind;
+        room = k === 'hostage' ? { type: 'hostage', name: room.name, waves: DK.STAGE2.hostageWaves } : { type: 'shop', name: room.name };
+        if (k !== 'hostage') run.shopType = k;
+      }
       this.room = room; this.state = 'start'; this.wave = -1; this.pending = 0; this.dlg = new DK.Dialogue(this);
       this.modal = null; this.pausedFlag = false; this.boss = null; this.interactables = [];
       this.cameras.main.fadeIn(250, 0, 0, 0);
-      const arena = DK.buildArena(this, { door: room.type !== 'boss', floor: room.type === 'boss' ? 'floor_boss' : room.type === 'shop' ? 'floor_shop' : 'floor', tint: room.type === 'boss' ? 0xe8d8cc : null });
+      const arena = this.stage === 2 ? DK.buildDesert(this, room) : DK.buildArena(this, { door: room.type !== 'boss', floor: room.type === 'boss' ? 'floor_boss' : room.type === 'shop' ? 'floor_shop' : 'floor', tint: room.type === 'boss' ? 0xe8d8cc : null });
       this.walls = arena.walls; this.door = arena.door;
       // groups
       this.covers = this.physics.add.staticGroup();
@@ -31,8 +39,15 @@
       this.fxG = this.add.graphics().setDepth(800);      // telegraphs, previews, hp bars
       this.player = new DK.Player(this, 70, H / 2, { run, canFight: true });
       // layout
-      if (room.type === 'combat' || room.type === 'hostage') this.layoutCovers(room.type === 'hostage');
-      if (room.type === 'boss') this.layoutBossRoom();
+      if (this.stage === 2) {
+        if (room.type === 'combat' || room.type === 'hostage') { DK.layoutDesert(this, { hostage: room.type === 'hostage' }); if (room.type === 'hostage') this.placeHostage(); }
+        if (room.type === 'shop') DK.layoutDesert(this, { center: true, boss: true });
+        if (room.type === 'boss') { DK.layoutDesert(this, { boss: true, center: true }); this.boss = new DK.SandWhale(this, W / 2, 230); }
+        DK.desertWind(this);
+      } else {
+        if (room.type === 'combat' || room.type === 'hostage') this.layoutCovers(room.type === 'hostage');
+        if (room.type === 'boss') this.layoutBossRoom();
+      }
       // physics
       const P = this.player.spr;
       this.physics.add.collider(P, this.walls); this.physics.add.collider(P, this.covers); this.physics.add.collider(P, this.barrels);
@@ -46,9 +61,9 @@
       this.physics.add.overlap(this.eBullets, this.covers, b => this.killEBullet(b, true));
       this.physics.add.overlap(this.eBullets, this.barrels, (b, br) => { if (!b.active) return; this.killEBullet(b, true); this.hitBarrel(br, b.dmg, 'enemy'); });
       this.physics.add.overlap(this.eBullets, P, (p, b) => { const bb = b === P ? p : b; if (!bb.active) return; if (this.hurtPlayer(bb.dmg, bb.src)) this.killEBullet(bb, false); });
-      this.physics.add.overlap(this.enemies, P, (a, b) => { const e = a === P ? b : a; if (e.alive && e.cfg.contact) this.hurtPlayer(e.cfg.contact, e.etype + '_contact'); });
+      this.physics.add.overlap(this.enemies, P, (a, b) => { const e = a === P ? b : a; if (!e.alive) return; const ch = e.contactDmgNow; if (ch) { if (this.hurtPlayer(ch, e.etype + '_charge')) { e.contactDmgNow = 0; e.hitDone = true; } return; } if (e.cfg.contact) this.hurtPlayer(e.cfg.contact, e.etype + '_contact'); });
       if (this.boss) {
-        this.physics.add.collider(P, this.boss.spr, () => { if (this.boss && this.boss.alive && this.boss.active) this.hurtPlayer(DK.BOSS.contact, 'boss_contact'); });
+        this.physics.add.collider(P, this.boss.spr, () => { const b = this.boss; if (!b || !b.alive || !b.active) return; const d = b.contactNow ? b.contactNow() : b.cfg.contact; if (d) this.hurtPlayer(d, d > b.cfg.contact ? 'boss_ram' : 'boss_contact'); });
         this.physics.add.overlap(this.pBullets, this.boss.spr, (a, b) => { const bl = a === this.boss.spr ? b : a; this.bulletHit(bl, this.boss.spr); });
         this.physics.add.collider(this.enemies, this.boss.spr);
       }
@@ -56,10 +71,14 @@
       this.setupControls();
       this.createHUD();
       // room start
-      const label = this.tutorial ? '教学关' : room.type === 'boss' ? 'BOSS · 铁砧' : `房间 ${run.room + 1}/5 · ${room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : room.name}`;
+      const nR = DK.roomsFor(run).length, bossName = this.boss ? this.boss.cfg.name : '铁砧';
+      const label = this.tutorial ? '教学关' : (this.stage === 2 ? '第二关 · ' : '') + (room.type === 'boss' ? 'BOSS · ' + bossName : `房间 ${run.room + 1}/${nR - 1} · ${room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : room.name}`);
       DK.banner(this, label, { size: 30, color: room.type === 'boss' ? '#ff5a4e' : '#f2c14e', dur: 1400 });
-      DK.music(this, room.type === 'boss' ? 'bgm_boss' : 'bgm_stage1');
-      if (room.type === 'combat' || room.type === 'hostage') { this.door.setOpen(false); this.time.delayedCall(900, () => this.nextWave()); this.state = 'fight'; }
+      if (this.stage === 2) { DK.music(this, room.type === 'boss' ? (this.cache.audio.exists('s2_bgm_boss_desert_p1') ? 's2_bgm_boss_desert_p1' : 's2_bgm_boss_desert') : 's2_bgm_desert'); DK.ambient(this, 's2_amb_desert_wind'); }
+      else { DK.music(this, room.type === 'boss' ? 'bgm_boss' : 'bgm_stage1'); DK.ambient(this, null); }
+      const intro2 = this.stage === 2 && run.room === 0 && !run.s2Intro && !DK.skipIntro2; // 第二关 opening (story/stage2.json intro)
+      if (intro2) { run.s2Intro = true; this.time.delayedCall(450, () => this.dlg.show(DK.lines(DK.story2.intro), () => {})); }
+      if (room.type === 'combat' || room.type === 'hostage') { this.door.setOpen(false); this.time.delayedCall(900, () => this.afterDialogue(() => this.nextWave())); this.state = 'fight'; }
       else if (room.type === 'shop') { this.door.setOpen(true); this.setupShop(); this.state = 'open'; }
       else if (room.type === 'boss') this.startBoss();
       else if (this.tutorial) { this.state = 'fight'; this.tut = new DK.Tutorial(this, this.tutorial); }
@@ -131,6 +150,11 @@
         this.hostage = this.add.sprite(hx, hy, 'hostage'); DK.applySkin(this.hostage, 'hostage'); this.hostage.setDepth(hy + 18);
         this.hostageFreed = false;
       }
+    }
+    placeHostage() {
+      const hx = DK.W * 0.62, hy = DK.H / 2;
+      this.hostage = this.add.sprite(hx, hy, 'hostage'); DK.applySkin(this.hostage, 'hostage'); this.hostage.setDepth(hy + 18);
+      this.hostageFreed = false;
     }
     layoutBossRoom() {
       const W = DK.W, H = DK.H;
@@ -226,13 +250,15 @@
     containEnemies() { // hard guard: Arcade skips wall separation when an overlap is deeper than one frame's motion (crowd/boss push, knockback), so pull escapees back
       this.enemies.getChildren().forEach(e => {
         if (!e.alive || !e.body) return; const r = e.cfg.radius;
-        if (this.inArena(e.x, e.y, r - 3)) return;
-        const p = this.clampArena(e.x, e.y, r); e.body.reset(p.x, p.y); e.stuckT = 0; this.escapes = (this.escapes || 0) + 1;
+        const bc = e.body.center; if (this.inArena(e.x, e.y, r - 3) || this.inArena(bc.x, bc.y, Math.min(r, e.body.halfWidth) - 3)) return; // the physics body is what collides
+        const p = this.clampArena(e.x, e.y, r);
+        if (this.inArena(e.x, e.y, r * 0.5)) { e.body.reset(p.x, p.y); this.nudges = (this.nudges || 0) + 1; return; } // ≤ ½r crowd squeeze against a wall: corrected before render, not an escape
+        (this.escapeLog = this.escapeLog || []).push({ t: e.etype, st: e.state || e.mode || '-', x: Math.round(e.x), y: Math.round(e.y), vx: Math.round(e.body.velocity.x), vy: Math.round(e.body.velocity.y) }); e.body.reset(p.x, p.y); e.stuckT = 0; this.escapes = (this.escapes || 0) + 1;
       });
     }
     targets() {
       const t = this.enemies.getChildren().filter(e => e.alive);
-      if (this.boss && this.boss.alive && this.boss.active) t.push(this.boss.spr);
+      if (this.boss && this.boss.alive && this.boss.active && this.boss.targetable !== false) t.push(this.boss.spr);
       return t;
     }
 
@@ -266,6 +292,7 @@
       if (o.boss) { // phase-3 ring: 1.5x, hot pink with a white rim so it reads on concrete (review P2-5)
         b.setTexture('ring_bullet').setDisplaySize(18, 18).setOrigin(0.5);
       }
+      if (o.art && DK.hasArt(o.art)) { const A = DK.ARTX[o.art]; b.setTexture(o.art, 0).setOrigin(0.5).setScale(o.artScale / (A.res_scale || 1)); if (this.anims.exists(o.art)) b.play(o.art); } else if (b.anims && b.anims.isPlaying) b.anims.stop();
       if (o.big) { const s0 = DK.artSize(key); b.setDisplaySize(s0[0] * 1.5, s0[1] * 1.1); b.setTint(0xffd0d0); }
       DK.setCircleBody(b, o.cannon ? 9 : o.boss ? 6 : 4.5);
       b.ring = !!o.boss;
@@ -293,6 +320,11 @@
           this.killBullet(b); return;
         }
       }
+      if (e.airborne) { // 跳兵 mid-leap: the bullet flies past (counted once per bullet)
+        if (b._dodgedBy !== e || b._dodgedBorn !== b.born) { b._dodgedBy = e; b._dodgedBorn = b.born; e.dodged = (e.dodged || 0) + 1; }
+        return;
+      }
+      if (e.etype === 'jumper') e.hitsTaken = (e.hitsTaken || 0) + 1;
       const dmg = b.dmg, run = this.run;
       this.killBullet(b);
       this.damage(e, dmg, { src: b.src + (b.frag ? '_frag' : ''), crit: b.crit, x: b.x, y: b.y, burst: b.burst });
@@ -364,12 +396,24 @@
       if (!e.alive) return;
       const run = this.run;
       if (src !== 'self') {
-        run.kills++;
-        if (e.realSkin) this.corpse(e); else this.explode(e.x, e.y, 24, 0, { src: 'fx', visualOnly: true, size: 0.45, quiet: true });
+        if (!e.dismounted) run.kills++; // a dismounted rider is the same 沙蝎骑兵: one kill, no second reward
+        const willDismount = e.etype === 'camel' && e.realSkin && DK.hasArt('camel_dismount') && src !== 'phase3' && src !== 'boss_dead' && this.state !== 'won' && this.state !== 'dead';
+        if (willDismount) { /* camel_dismount transition + s2_camel_corpse replace the death corpse */ } else if (e.realSkin) this.corpse(e); else this.explode(e.x, e.y, 24, 0, { src: 'fx', visualOnly: true, size: 0.45, quiet: true });
         DK.sfx(this, 'explosion_small', { volume: 0.55, minGap: 60 });
       }
       DK.logDamage({ src, tgt: e.etype, amt: 0, note: 'killed' });
+      const dismount = e.etype === 'camel' && src !== 'self' && src !== 'phase3' && src !== 'boss_dead' && this.state !== 'won' && this.state !== 'dead';
+      const ex = e.x, ey = e.y, snap = dismount ? { x: ex, y: ey, flipX: e.flipX, depth: e.depth, realSkin: e.realSkin } : null;
       DK.removeEnemy(e);
+      if (dismount) { // the camel falls, its rider jumps off and fights on foot (own HP; the camel paid the scrap/kill)
+        DK.sfx(this, 's2_camel_groan_2', { minGap: 100 });
+        DK.camelDismount(this, snap, (x, y, flip) => {
+          const q = this.spawnOk(x, y, 16) ? { x, y } : this.findSpawn(16, x, y);
+          const r = DK.spawnEnemy(this, 'camel_rider', q.x, q.y, { dismounted: true }); this.dismounts = (this.dismounts || 0) + 1; r.setAlpha(1); if (flip != null) r.setFlipX(flip);
+          const bark = DK.enemyBark('camel_rider'); if (bark) DK.speech(this, { speaker: 'camel_rider', text: DK.fmt(bark[1] || bark[0]) }, 1600);
+          DK.logDamage({ src: 'camel', tgt: 'camel_rider', amt: 0, note: 'dismount hp ' + r.hp });
+        });
+      }
       this.time.delayedCall(10, () => this.enemies.remove(e));
     }
     corpse(e) { // play the death sheet on a detached sprite, then fade it out
@@ -400,7 +444,9 @@
       const img = this.add.sprite(x, y, 'explosion').setDepth(850);
       DK.applyArt(img, 'explosion'); const es = DK.artSize('explosion'); const s0 = (r * 2) / es[0];
       if (o.steam) img.setTint(0xe0f8ff);
-      if (DK.ART.explosion.real) { // art-team sheet: play it at blast size
+      if (o.art && DK.hasArt(o.art)) { // stage-specific explosion sheet (s2_explosion: damage frame 01)
+        img.setTexture(o.art, 0).setDisplaySize(r * 2.4, r * 2.4).play(o.art); img.once('animationcomplete', () => img.destroy()); this.time.delayedCall(1500, () => img.active && img.destroy());
+      } else if (DK.ART.explosion.real) { // art-team sheet: play it at blast size
         img.setDisplaySize(es[0] * s0 * 1.25, es[1] * s0 * 1.25).setRotation(rnd(-0.4, 0.4));
         img.once('animationcomplete', () => img.destroy());
         this.time.delayedCall(1500, () => img.active && img.destroy());
@@ -423,7 +469,7 @@
             if (e.alive && o.knock && e.body) { const a = Math.atan2(e.y - y, e.x - x); e.setVelocity(Math.cos(a) * o.knock, Math.sin(a) * o.knock); e.stuckT = 0; }
           }
         });
-        if (this.boss && this.boss.alive) { const bx = this.boss.x, by = this.boss.y; if (Math.abs(x - bx) < 75 + r && Math.abs(y - by) < 52 + r) this.damage(this.boss.spr, dmg, { src: o.src }); }
+        if (this.boss && this.boss.alive && this.boss.targetable !== false) { const bx = this.boss.x, by = this.boss.y, hw = this.boss.hitW || 75, hh = this.boss.hitH || 52; if (Math.abs(x - bx) < hw + r && Math.abs(y - by) < hh + r) this.damage(this.boss.spr, dmg, { src: o.src }); }
         this.covers.getChildren().slice().forEach(c => { if (c.hp && Math.hypot(c.x - x, c.y - y) < r + 24) this.hitCover(c, dmg); });
       }
       this.barrels.getChildren().slice().forEach(br => { if (br.active && Math.hypot(br.x - x, br.y - y) < r + 14) this.time.delayedCall(90, () => this.hitBarrel(br, 999, 'chain')); });
@@ -516,13 +562,16 @@
     }
     rescueHostage() {
       if (this.hostageFreed) return; this.hostageFreed = true;
-      const run = this.run; run.scrap += DK.HOSTAGE_SCRAP; run.hp = Math.min(run.maxHp, run.hp + 20);
+      const run = this.run, hs = this.stage === 2 ? DK.STAGE2.hostageScrap : DK.HOSTAGE_SCRAP; run.scrap += hs; run.hp = Math.min(run.maxHp, run.hp + 20);
       DK.sfx(this, 'hostage_rescue'); DK.anim(this.hostage, 'freed');
       this.tweens.add({ targets: this.hostage, alpha: 0, y: this.hostage.y - 30, duration: 700, delay: 1600 });
-      DK.speech(this, { speaker: 'hostage', text: '谢谢中士！铁砧就在前面……小心它的履带！' }, 2400);
-      DK.banner(this, `人质获救 · 废铁 +${DK.HOSTAGE_SCRAP} · 生命 +20`, { color: '#7ee07a', size: 22 });
-      this.state = 'cleared'; this.time.delayedCall(900, () => this.offerReward());
+      if (this.stage === 2) { // story/stage2.json special_room.hostage (剧情王)
+        this.time.delayedCall(300, () => { if (this.scene.isActive() && !this.modal) this.dlg.show(DK.lines(DK.story2.special_room.hostage), () => {}); });
+      } else DK.speech(this, { speaker: 'hostage', text: '谢谢中士！铁砧就在前面……小心它的履带！' }, 2400);
+      DK.banner(this, `人质获救 · 废铁 +${hs} · 生命 +20`, { color: '#7ee07a', size: 22 });
+      this.state = 'cleared'; this.time.delayedCall(900, () => this.afterDialogue(() => this.offerReward()));
     }
+    afterDialogue(fn) { if (!this.dlg.active) return fn(); const w = this.time.addEvent({ delay: 100, loop: true, callback: () => { if (!this.dlg.active) { w.remove(); fn(); } } }); }
     offerReward(title) {
       const picks = DK.rollRewards(this.run, 3);
       if (this.touch) this.touch.reset();
@@ -556,10 +605,10 @@
         if (!real) m.setPosition(mx, sy + 20);
         m.setDepth(real ? mFeet : m.y + 20);
         this.merchantSpr = m;
-        DK.txt(this, sx, DK.hasArt('merchant_stall') ? sy - 148 : mFeet - 118, '军火商', { fontSize: '14px', color: '#d9a7ff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(900).setScrollFactor(1);
+        DK.txt(this, sx, DK.hasArt('merchant_stall') ? sy - 148 : mFeet - 118, (DK.story.npcs && DK.story.npcs.merchant && DK.story.npcs.merchant.name ? DK.story.npcs.merchant.name + ' · ' : '') + '军火商', { fontSize: '14px', color: '#d9a7ff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(900).setScrollFactor(1);
         this.sold = {}; this.merchantTalked = false;
         this.interactables.push({ x: mx, y: mFeet + 10, r: 90, label: '交易', fn: () => this.talkMerchant() });
-        this.time.delayedCall(500, () => DK.speech(this, { speaker: 'merchant', text: '有废铁就有货。没废铁……就看看。' }, 2400));
+        this.time.delayedCall(500, () => DK.speech(this, DK.merchantLine('greet', this.stage) || { speaker: 'merchant', text: '有废铁就有货。没废铁……就看看。' }, 2400));
       } else {
         const c = this.add.image(W / 2, H / 2, 'campfire'); DK.applyArt(c, 'campfire'); c.setDepth(c.y);
         this.tweens.add({ targets: c, scaleY: c.scaleY * 1.08, yoyo: true, repeat: -1, duration: 300 });
@@ -571,8 +620,8 @@
       if (this.dlg.active || this.modal) return;
       if (this.merchantTalked) return this.openMerchant();
       this.merchantTalked = true;
-      const lines = ['老规矩：废铁换货，不赊账。', '这些宝贝可都是“捡”来的，别问哪儿捡的。', '急救包、手雷、还有点神秘改装……挑吧，兵哥。'];
-      this.dlg.show([{ speaker: 'merchant', text: Phaser.Utils.Array.GetRandom(lines) }], () => this.openMerchant());
+      const l = DK.merchantLine('greet', this.stage) || { speaker: 'merchant', text: '老规矩：废铁换货，不赊账。' }; // story.json npcs.merchant (黄牙) / stage2.json npcs.merchant
+      this.dlg.show([l], () => this.openMerchant());
     }
     openMerchant() {
       const run = this.run, items = [
@@ -581,9 +630,10 @@
         { id: 'card', name: '神秘改装', icon: 'icon_mod', desc: '打开一次\n三选一奖励', cost: 22, can: () => true, buy: () => { this.time.delayedCall(150, () => this.offerReward('军火商 · 三选一')); } }
       ];
       if (this.touch) this.touch.reset();
+      if (items.every(it => this.sold[it.id] || run.scrap < it.cost)) { const l = DK.merchantLine('no_scrap', this.stage); if (l) DK.speech(this, l, 2200); }
       this.modal = DK.cardChoice(this, '军火商', items.map(it => ({ title: it.name, desc: it.desc + (this.sold[it.id] ? '\n（已售出）' : ''), icon: it.icon, cost: it.cost,
         disabled: this.sold[it.id] || run.scrap < it.cost || !it.can(),
-        onPick: () => { run.scrap -= it.cost; this.sold[it.id] = true; DK.logDamage({ src: 'shop', tgt: '-', amt: 0, note: 'bought ' + it.id }); this.modal = null; it.buy(); } })),
+        onPick: () => { run.scrap -= it.cost; this.sold[it.id] = true; DK.logDamage({ src: 'shop', tgt: '-', amt: 0, note: 'bought ' + it.id }); this.modal = null; it.buy(); const l = DK.merchantLine('buy', this.stage); if (l) DK.speech(this, l, 2000); } })),
         { subtitle: `本轮废铁：${run.scrap}`, skipLabel: '离开', onSkip: () => { this.modal = null; } });
     }
     openRest() {
@@ -611,6 +661,7 @@
     // ------------------------------------------------------------- boss
     startBoss() {
       const run = this.run, b = this.boss;
+      if (this.stage === 2) return this.startBoss2();
       this.state = 'bossintro';
       this.tweens.add({ targets: b.spr, y: 150, duration: 1600, ease: 'Sine.easeOut', onUpdate: () => b.update(0) });
       this.cameras.main.shake(1600, 0.004);
@@ -618,21 +669,52 @@
       DK.meta.bossSeen = (DK.meta.bossSeen || 0) + 1; DK.saveMeta();
       this.time.delayedCall(1700, () => {
         const lines = DK.lines(first ? DK.story.boss_anvil.intro : DK.story.boss_anvil.intro_short);
-        this.dlg.show(lines, () => { this.state = 'boss'; b.active = true; b.startTime = this.time.now; this.bossStart = this.time.now; DK.banner(this, '铁砧 · 前线碾压者', { color: '#ff5a4e', size: 30 }); });
+        this.dlg.show(lines, () => { this.state = 'boss'; b.active = true; b.startTime = this.gameT; this.bossStart = this.gameT; DK.banner(this, '铁砧 · 前线碾压者', { color: '#ff5a4e', size: 30 }); });
       });
+    }
+    startBoss2() { // 沙鲸 rises out of the sand
+      const b = this.boss, S = DK.story2.boss_sandwhale; this.state = 'bossintro';
+      b.spr.setAlpha(0); b.turret.setAlpha(0); b.spr.body.enable = false;
+      this.cameras.main.shake(1800, 0.005); DK.sfx(this, 's2_camel_groan_2', { volume: 0.8 });
+      for (let i = 0; i < 6; i++) this.time.delayedCall(i * 230, () => this.spark(b.x + rnd(-80, 80), b.y + rnd(-10, 40), 0xe0c58a, 8));
+      this.time.delayedCall(1300, () => { this.tweens.add({ targets: [b.spr, b.turret], alpha: 1, duration: 500 }); b.spr.body.enable = true; this.explode(b.x, b.y + 20, 70, 0, { src: 'fx', visualOnly: true }); });
+      const first = !DK.meta.boss2Seen; DK.meta.boss2Seen = (DK.meta.boss2Seen || 0) + 1; DK.saveMeta();
+      this.time.delayedCall(1900, () => {
+        this.dlg.show(DK.lines(first ? S.intro : (S.intro_short || S.intro)), () => { this.state = 'boss'; b.active = true; b.startTime = this.gameT; this.bossStart = this.gameT; DK.banner(this, S.name + ' · ' + S.title, { color: '#ffb04e', size: 30 }); });
+      });
+    }
+    dropEchoPod(b) { // 「马克·0号」: independent loot object (art: sandwhale_echo_pod_idle, spawned near the head on destroy frame 11)
+      const head = b.spr.flipX ? -1 : 1, px = Phaser.Math.Clamp(b.x + 110 * head, 120, DK.W - 120), py = Phaser.Math.Clamp(b.y + 110, 160, DK.H - 60); // in front of the head, clear of the wreck
+      let pod;
+      if (DK.hasArt('sandwhale_echo_pod_idle')) { const A = DK.ARTX.sandwhale_echo_pod_idle; pod = this.add.sprite(px, py, 'sandwhale_echo_pod_idle', 0).setOrigin(A.anchor[0] / A.frame_size[0], A.anchor[1] / A.frame_size[1]).setScale(0.3 / (A.res_scale || 1)); if (this.anims.exists('sandwhale_echo_pod_idle')) pod.play('sandwhale_echo_pod_idle'); }
+      else { pod = this.add.image(px, py, 'echo_pod_zero'); DK.applyArt(pod, 'echo_pod_zero'); }
+      pod.setDepth(py + 40).setAlpha(0); this.echoPod = pod;
+      const tag = DK.txt(this, px, py - 100, '「马克·0号」', { fontSize: '16px', color: '#9fe8ff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(1900).setAlpha(0); this.echoTag = tag;
+      this.tweens.add({ targets: [pod, tag], alpha: 1, duration: 500 });
+      DK.logDamage({ src: 'boss', tgt: '-', amt: 0, note: 'echo pod 马克·0号 dropped' });
     }
     onBossDead(b) {
       this.state = 'won';
-      const secs = ((this.time.now - (this.bossStart || this.time.now)) / 1000).toFixed(1);
+      const secs = (this.gameT - (this.bossStart || this.gameT)).toFixed(1); // game time (N1)
       DK.logDamage({ src: 'boss', tgt: 'boss', amt: 0, note: 'boss defeated in ' + secs + 's' });
       this.eBullets.getChildren().forEach(x => x.active && x.disableBody(true, true));
       this.enemies.getChildren().slice().forEach(e => e.alive && this.killEnemy(e, 'boss_dead'));
       this.mines.slice().forEach(m => m.destroy()); this.mines = [];
+      if (this.stage === 2) { DK.clearEnemyGrenades(this); DK.setSandstorm(this, false); if (b.targetable === false) b.setBurrowed(false); b.lane = null; b.trail = null; b.spr.setAngle(0); }
       b.spr.setVelocity(0); b.spr.clearTint(); DK.anim(b.spr, 'destroy');
       for (let i = 0; i < 7; i++) this.time.delayedCall(i * 220, () => this.explode(b.x + rnd(-70, 70), b.y + rnd(-50, 50), 60, 0, { src: 'fx', size: 1 }));
+      const DA = DK.ARTX.sandwhale_destroy, podAt = this.stage === 2 && b.spr.realSkin && DA ? ((DA.event_frames || {}).drop_echo_pod || 11) / (DA.fps || 10) * 1000 : 1700;
+      if (this.stage === 2) this.time.delayedCall(podAt, () => this.dropEchoPod(b));
       this.time.delayedCall(1700, () => {
         if (!b.spr.realSkin) { b.spr.setTint(0x333333); b.turret.setTint(0x333333); }
-        const lines = DK.lines(DK.story.boss_anvil.death).concat(DK.lines(DK.story.victory));
+        if (false) { // the 回响舱 it swallowed rolls out: 「马克·0号」
+          const px = Phaser.Math.Clamp(b.x + 90, 120, DK.W - 120), py = Phaser.Math.Clamp(b.y + 60, 160, DK.H - 80);
+          const pod = this.add.image(px, py, 'echo_pod_zero'); DK.applyArt(pod, 'echo_pod_zero'); pod.setDepth(py + 40).setAlpha(0); this.echoPod = pod;
+          const tag = DK.txt(this, px, py - 62, '「马克·0号」', { fontSize: '16px', color: '#9fe8ff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setDepth(1900).setAlpha(0); this.echoTag = tag;
+          this.tweens.add({ targets: [pod, tag], alpha: 1, duration: 500 }); this.tweens.add({ targets: pod, y: py - 4, yoyo: true, repeat: -1, duration: 700 });
+          DK.logDamage({ src: 'boss', tgt: '-', amt: 0, note: 'echo pod 马克·0号 dropped' });
+        }
+        const S = this.stage === 2 ? DK.story2 : DK.story, lines = DK.lines((this.stage === 2 ? S.boss_sandwhale : S.boss_anvil).death).concat(DK.lines(S.victory));
         this.dlg.show(lines, () => this.finishVictory(secs));
       });
     }
@@ -640,8 +722,11 @@
       const run = this.run, gained = run.scrap + DK.WIN_BONUS;
       Object.assign(DK.meta, { scrap: DK.meta.scrap + gained, wins: (DK.meta.wins || 0) + 1, lastResult: 'victory', lastRunScrap: gained });
       DK.saveMeta();
-      const stats = { type: 'victory', scrap: gained, kills: run.kills, time: Math.round((Date.now() - run.startTime) / 1000), bossSecs };
-      DK.run = null; DK.music(this, null);
+      const stats = { type: 'victory', stage: this.stage, scrap: gained, kills: run.kills, time: Math.round((Date.now() - run.startTime) / 1000), bossSecs };
+      if (this.stage === 1) { DK.meta.stage2Unlocked = true; DK.saveMeta(); stats.next = 2; // 继续 · 第二关: the same run carries on (scrap was banked above)
+        DK.pendingRun = Object.assign(run, { stage: 2, room: 0, scrap: 0, hp: run.maxHp, special2: null }); }
+      else DK.pendingRun = null;
+      DK.run = null; DK.music(this, null); DK.ambient(this, null);
       this.scene.start('Result', stats);
     }
     playerDie(src) {
@@ -658,9 +743,9 @@
       DK.meta.pendingAfterDeath = { laoqiang: true, lingjian: true };
       DK.saveMeta();
       DK.logDamage({ src, tgt: 'player', amt: 0, note: 'player died' });
-      const stats = { type: 'death', scrap: run.scrap, kept, kills: run.kills, room: run.room + 1, by: src, time: Math.round((Date.now() - run.startTime) / 1000) };
+      const stats = { type: 'death', stage: this.stage, scrap: run.scrap, kept, kills: run.kills, room: run.room + 1, by: src, time: Math.round((Date.now() - run.startTime) / 1000) };
       DK.run = null;
-      this.time.delayedCall(1300, () => { DK.music(this, null); this.scene.start('Result', stats); });
+      this.time.delayedCall(1300, () => { DK.music(this, null); DK.ambient(this, null); this.scene.start('Result', stats); });
     }
 
     // ------------------------------------------------------------- HUD
@@ -687,27 +772,27 @@
       g.fillStyle(0x000000, 0.6).fillRoundedRect(16, 12, 204, 16, 4);
       g.fillStyle(run.hp / run.maxHp < 0.3 ? 0xe74c3c : 0x5fbf4a).fillRoundedRect(18, 14, 200 * Math.max(0, run.hp / run.maxHp), 12, 3);
       h.hp.setText(`${Math.ceil(run.hp)} / ${run.maxHp}`).setPosition(24, 12);
-      // ammo / reload
-      const mag = run.mag[w.id];
-      h.ammo.setText(`${w.name}  ∞`);
+      // weapon (infinite ammo) + 马克被动 charge
+      h.ammo.setText(`${w.name}  ∞` + (p.powerShots > 0 ? `  强化×${p.powerShots}` : ''));
       const ammoNames = run.ammoTypes.map(a => DK.AMMO[a].name.replace('弹', '')).join('+') || '普通';
       const mods = Object.keys(run.mods).length;
       h.info.setText(`弹种 ${ammoNames} · 手雷 ${run.grenades} · 冲刺 ${p.charges}/${run.dashCharges}${mods ? ' · 改造 ' + mods : ''}`).setPosition(20, 70);
+      for (let i = 0; i < (p.powerShots || 0); i++) g.fillStyle(0xff8a4a, 1).fillCircle(p.x - 8 + i * 8, p.y - 34, 3); // 马克被动: charged shots
       // dash pips under the player
       for (let i = 0; i < run.dashCharges; i++) g.fillStyle(i < p.charges ? 0x7ee07a : 0x333333, 0.9).fillCircle(p.x - (run.dashCharges - 1) * 5 + i * 10, p.y + 30, 3);
       if (p.charges < run.dashCharges && p.dashCdT > 0) g.lineStyle(2, 0x7ee07a, 0.8).beginPath().arc(p.x, p.y, 24, -Math.PI / 2, -Math.PI / 2 + PI2 * (1 - p.dashCdT / DK.PLAYER.dashCd)).strokePath();
       // room progress
-      const total = DK.ROOMS.length;
-      if (this.tutorial) h.room.setText('教学关'); else h.room.setText(this.room.type === 'boss' ? 'BOSS 铁砧' : `房间 ${run.room + 1}/5  ${this.room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : this.room.name}${this.state === 'fight' ? '  · 敌人 ' + (this.targets().length + this.pending) : ''}`);
+      const total = DK.roomsFor(run).length;
+      if (this.tutorial) h.room.setText('教学关'); else h.room.setText((this.stage === 2 ? '沙海 · ' : '') + (this.room.type === 'boss' ? 'BOSS ' + (this.boss ? this.boss.cfg.name : '') : `房间 ${run.room + 1}/${total - 1}  ${this.room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : this.room.name}${this.state === 'fight' ? '  · 敌人 ' + (this.targets().length + this.pending) : ''}`));
       if (!this.tutorial) for (let i = 0; i < total; i++) { const x = DK.W / 2 - (total - 1) * 11 + i * 22; g.fillStyle(i < run.room ? 0x7ee07a : i === run.room ? 0xf2c14e : 0x444444).fillCircle(x, 40, i === total - 1 ? 6 : 4); }
       h.scrap.setText(`废铁 ${run.scrap}   击杀 ${run.kills}`);
       // boss bar
       if (this.boss && this.boss.active && this.boss.alive) {
         const b = this.boss, bw = 420, x = DK.W / 2 - bw / 2, y = DK.touchMode ? 54 : DK.H - 36; // touch: top, clear of the thumb buttons
         g.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, bw + 4, 14);
-        g.fillStyle(b.invulnT > 0 ? 0x888888 : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
-        g.fillStyle(0xffffff, 0.8).fillRect(x + bw * DK.BOSS.phase2At / b.maxHp, y - 2, 2, 14).fillRect(x + bw * DK.BOSS.phase3At / b.maxHp, y - 2, 2, 14);
-        h.boss.setText(`铁砧  ${Math.ceil(b.hp)} / ${b.maxHp}   阶段 ${b.phase}`).setVisible(true);
+        const locked = b.armorLocked(), plate = Math.round((b.plateRed || 0) * 100); g.fillStyle(b.invulnT > 0 ? 0x888888 : locked || plate >= 15 ? 0x7fa8cc : 0xe74c3c).fillRect(x, y, bw * b.hp / b.maxHp, 10);
+        g.fillStyle(0xffffff, 0.8).fillRect(x + bw * b.cfg.phase2At / b.maxHp, y - 2, 2, 14).fillRect(x + bw * b.cfg.phase3At / b.maxHp, y - 2, 2, 14);
+        h.boss.setText(`${b.cfg.name}  ${Math.ceil(b.hp)} / ${b.maxHp}   阶段 ${b.phase}` + (b.targetable === false ? '   潜沙中' : '') + (locked ? `   装甲锁定 ${Math.ceil(b.armorLeft())}s` : plate >= 5 ? `   装甲 -${plate}%` : '')).setVisible(true);
       } else h.boss.setVisible(false);
       // interact prompt
       const it = !this.isPaused() && this.nearInteract();
@@ -734,6 +819,7 @@
       if (!paused) {
         this.enemies.getChildren().slice().forEach(e => e.alive && DK.updateEnemy(this, e, dt));
         if (this.boss) this.boss.update(dt);
+        if (this.stage === 2) DK.updateStage2(this, dt);
         // bullet lifetimes
         const now = this.time.now;
         this.pBullets.getChildren().forEach(b => { // soft aim assist: bend toward the target for a short while, give up once it is behind
@@ -762,6 +848,7 @@
       // fx layer
       DK.drawEnemyFx(this, g);
       if (this.boss) this.boss.drawFx(g);
+      if (this.stage === 2) DK.drawStage2(this, g);
       if (this.tut) this.tut.draw(g);
       this.mines.forEach(m => { if (m.active && m.armT <= 0) g.lineStyle(1, 0xff3030, 0.35).strokeCircle(m.x, m.y, 34); });
       if (this.state === 'hostage' && this.hostage) g.lineStyle(2, 0x7ee07a, 0.5 + 0.4 * Math.sin(this.time.now / 150)).strokeCircle(this.hostage.x, this.hostage.y, 30);

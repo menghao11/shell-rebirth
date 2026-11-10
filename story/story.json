@@ -2,14 +2,38 @@
   "version": 1,
   "notes": "speaker 取值：mark=马克中士, laoqiang=老枪, lingjian=零件, anvil=铁砧(坦克广播), system=系统/旁白。每句建议 ≤24 字。{deaths} 为死亡次数，{scrap} 为本轮废铁。",
   "intro": [
-    {"speaker": "system", "text": "第七次弹壳战争，第 1095 天。"},
-    {"speaker": "system", "text": "废弃前线。最后一支突击队失联。"},
-    {"speaker": "mark", "text": "……回响舱？我不是被坦克碾过去了吗？"},
-    {"speaker": "lingjian", "text": "碾了。很扁。我把你重新打印了一份。"},
-    {"speaker": "mark", "text": "打印？！"},
-    {"speaker": "laoqiang", "text": "别问，问就是军事机密。枪拿好，铁砧还在前线。"},
-    {"speaker": "lingjian", "text": "放心，舱里还有你很多份。大概。"},
-    {"speaker": "mark", "text": "……这句'大概'能不能删掉？"}
+    {
+      "speaker": "system",
+      "text": "第七次弹壳战争，第 1095 天。"
+    },
+    {
+      "speaker": "system",
+      "text": "废弃前线。最后一支突击队失联。"
+    },
+    {
+      "speaker": "mark",
+      "text": "……回响舱？我不是被坦克碾过去了吗？"
+    },
+    {
+      "speaker": "lingjian",
+      "text": "碾了。很扁。我把你重新打印了一份。"
+    },
+    {
+      "speaker": "mark",
+      "text": "打印？！"
+    },
+    {
+      "speaker": "laoqiang",
+      "text": "别问，问就是军事机密。枪拿好，铁砧还在前线。"
+    },
+    {
+      "speaker": "lingjian",
+      "text": "放心，舱里还有你很多份。大概。"
+    },
+    {
+      "speaker": "mark",
+      "text": "……这句'大概'能不能删掉？"
+    }
   ],
   "npcs": {
     "laoqiang": {
@@ -76,27 +100,77 @@
         "数据库里有很多马克的记录……有一份最后的坐标在铁砧里面。",
         "错误：无法读取 1 号马克的结局。权限不足。"
       ]
+    },
+    "merchant": {
+      "name": "黄牙",
+      "role": "军火商，满嘴金牙的倒爷，两边都卖",
+      "greet": [
+        "欢迎光临！今天打折，明天涨价，后天你可能就不在了。",
+        "哟，马克！你上次也在这站过……还是上上次？",
+        "货真价实，概不退换，死了也不退。",
+        "废铁我收，命我不收。",
+        "别看了，这把枪就是在等你。"
+      ],
+      "buy": [
+        "成交！拿去打铁砧，打不过别回来找我。",
+        "好眼光！上一个买它的……算了，不提了。",
+        "滴答，废铁到账。祝你活得比保修期长。",
+        "这玩意儿威力大，后坐力也大，别打着自己。"
+      ],
+      "no_scrap": [
+        "没废铁？那你看看就好，别摸。",
+        "赊账？我这儿只赊给死人，他们不跑。",
+        "去前线捡点废铁再来，满地都是，包括你自己。",
+        "钱不够，心意我领了，货我留着。"
+      ]
     }
   },
   "boss_anvil": {
     "name": "铁砧",
     "title": "前线碾压者",
     "intro": [
-      {"speaker": "anvil", "text": "【广播】检测到入侵者：马克中士。"},
-      {"speaker": "anvil", "text": "【广播】第……{deaths}……次。"},
-      {"speaker": "mark", "text": "它怎么知道我死过几次？！"},
-      {"speaker": "anvil", "text": "【广播】碾压程序，启动。"}
+      {
+        "speaker": "anvil",
+        "text": "【广播】检测到入侵者：马克中士。"
+      },
+      {
+        "speaker": "anvil",
+        "text": "【广播】第……{deaths}……次。"
+      },
+      {
+        "speaker": "mark",
+        "text": "它怎么知道我死过几次？！"
+      },
+      {
+        "speaker": "anvil",
+        "text": "【广播】碾压程序，启动。"
+      }
     ],
     "intro_short": [
-      {"speaker": "anvil", "text": "【广播】又是你。碾压程序，启动。"}
+      {
+        "speaker": "anvil",
+        "text": "【广播】又是你。碾压程序，启动。"
+      }
     ],
     "phase2": [
-      {"speaker": "anvil", "text": "【广播】补充兵员。铺设地雷。"},
-      {"speaker": "mark", "text": "你还带小弟的？！"}
+      {
+        "speaker": "anvil",
+        "text": "【广播】补充兵员。铺设地雷。"
+      },
+      {
+        "speaker": "mark",
+        "text": "你还带小弟的？！"
+      }
     ],
     "phase3": [
-      {"speaker": "anvil", "text": "【广播】警告……驾驶员……心率……异常……"},
-      {"speaker": "anvil", "text": "【广播】全方位火力。别……回头。"}
+      {
+        "speaker": "anvil",
+        "text": "【广播】警告……驾驶员……心率……异常……"
+      },
+      {
+        "speaker": "anvil",
+        "text": "【广播】全方位火力。别……回头。"
+      }
     ],
     "taunts": [
       "【广播】装甲厚度：比你的人生规划厚。",
@@ -104,10 +178,22 @@
       "【广播】回响舱见。"
     ],
     "death": [
-      {"speaker": "anvil", "text": "【广播】系统……崩溃……"},
-      {"speaker": "anvil", "text": "【广播】马克……别信……回响……"},
-      {"speaker": "mark", "text": "……驾驶舱里，是一件和我一样的军装。"},
-      {"speaker": "mark", "text": "算了，先拿战利品。"}
+      {
+        "speaker": "anvil",
+        "text": "【广播】系统……崩溃……"
+      },
+      {
+        "speaker": "anvil",
+        "text": "【广播】马克……别信……回响……"
+      },
+      {
+        "speaker": "mark",
+        "text": "……驾驶舱里，是一件和我一样的军装。"
+      },
+      {
+        "speaker": "mark",
+        "text": "算了，先拿战利品。"
+      }
     ]
   },
   "death_quips": [
@@ -123,9 +209,21 @@
     "我总觉得……这事我经历过。"
   ],
   "victory": [
-    {"speaker": "laoqiang", "text": "铁砧趴了？好小子！今晚机油管够！"},
-    {"speaker": "lingjian", "text": "滴。前线信号恢复……检测到更远处还有回响舱信号。"},
-    {"speaker": "mark", "text": "更远处？还有别人在被'打印'？"},
-    {"speaker": "system", "text": "第一关 完 —— 未完待续"}
+    {
+      "speaker": "laoqiang",
+      "text": "铁砧趴了？好小子！今晚机油管够！"
+    },
+    {
+      "speaker": "lingjian",
+      "text": "滴。前线信号恢复……检测到更远处还有回响舱信号。"
+    },
+    {
+      "speaker": "mark",
+      "text": "更远处？还有别人在被'打印'？"
+    },
+    {
+      "speaker": "system",
+      "text": "第一关 完 —— 未完待续"
+    }
   ]
 }

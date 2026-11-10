@@ -20,6 +20,29 @@
       DK.story.boss_anvil = Object.assign({}, FALLBACK.boss_anvil, s.boss_anvil || {});
       DK.assetReport.story = 'file';
     }
+    // stage 2 (剧情王, story/stage2.json); built-in minimal fallback keeps the stage playable without it
+    const s2 = scene.cache.json.exists('story2') ? scene.cache.json.get('story2') : null;
+    DK.story2 = Object.assign({}, FALLBACK2, s2 || {});
+    DK.story2.boss_sandwhale = Object.assign({}, FALLBACK2.boss_sandwhale, (s2 && s2.boss_sandwhale) || {});
+    DK.story2.npcs = Object.assign({}, FALLBACK2.npcs, (s2 && s2.npcs) || {});
+  };
+  const FALLBACK2 = {
+    intro: [{ speaker: 'system', text: '无名沙海。' }], faction: { name: '沙蝎军团', enemies: {} }, npcs: {},
+    special_room: { hostage: [{ speaker: 'hostage', text: '别杀我！' }] },
+    boss_sandwhale: { name: '沙鲸', title: '流沙之喉', intro: [{ speaker: 'boss', text: '【广播】检测完毕。' }], taunts: ['【嘶吼】咕噜。'], death: [{ speaker: 'system', text: '沙鲸倒下了。' }] },
+    death_quips: ['我嘴里全是沙。'], victory: [{ speaker: 'system', text: '第二关 完' }]
+  };
+  // stage-aware helpers: the current stage's story / a merchant line (stage file first, then story.json)
+  DK.storyFor = stage => (stage === 2 ? DK.story2 : DK.story);
+  DK.merchantLine = function (group, stage) {
+    const a = stage === 2 && DK.story2 && DK.story2.npcs.merchant && DK.story2.npcs.merchant[group];
+    const b = DK.story.npcs && DK.story.npcs.merchant && DK.story.npcs.merchant[group];
+    const t = DK.pick(a && a.length ? (b && b.length ? a.concat(b) : a) : b);
+    return t ? { speaker: 'merchant', text: DK.fmt(t) } : null;
+  };
+  DK.enemyBark = function (etype) {
+    const key = etype === 'camel' ? 'camel_rider' : etype, e = DK.story2 && DK.story2.faction && DK.story2.faction.enemies && DK.story2.faction.enemies[key];
+    return e && e.barks ? e.barks : null;
   };
   DK.fmt = function (text, vars) {
     vars = vars || {};

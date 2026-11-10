@@ -47,14 +47,15 @@
     if (lastPlay[key] && now - lastPlay[key] < minGap) return null;
     lastPlay[key] = now;
     if (DK.muted) return null;
-    const vol = (opts.volume != null ? opts.volume : 1) * (DK.SFX_VOL[key] != null ? DK.SFX_VOL[key] : DK.SFX_DEFAULT_VOL) * DK.vol.sfx;
-    if (vol <= 0) return null;
     const cache = scene.cache.audio;
     let k = key;
     if (!cache.exists(k)) {
       const vars = (DK._variants[key] = DK._variants[key] || cache.getKeys().filter(x => new RegExp('^' + key + '_\\d+$').test(x)));
       k = vars.length ? vars[(Math.random() * vars.length) | 0] : null;
     }
+    const bv = k && DK.SFX_VOL[k] != null ? DK.SFX_VOL[k] : DK.SFX_VOL[key] != null ? DK.SFX_VOL[key] : DK.SFX_DEFAULT_VOL; // per-file volume (stage-2 MANIFEST) wins
+    const vol = (opts.volume != null ? opts.volume : 1) * bv * DK.vol.sfx;
+    if (vol <= 0) return null;
     try {
       if (k) {
         if (scene.sound.locked) { DK.logAudio(key, 'locked'); return null; }
@@ -71,9 +72,11 @@
   DK._variants = {};
   // Background music. Sample-accurate WebAudio loop (source.loop + loopStart/loopEnd) using the exact loop
   // lengths from audio/MANIFEST.md, skipping any MP3 encoder-delay silence at the head. Safe before the iOS unlock.
-  DK._bgm = null;
-  function stopBgm() {
-    const b = DK._bgm; DK._bgm = null; if (!b) return;
+  // Two loop slots: 'bgm' (music volume) and 'amb' (desert wind bed, also on the music slider).
+  DK._bgm = null; DK._amb = null;
+  const SLOT = { bgm: '_bgm', amb: '_amb' }, WANT = { bgm: '_wantBgm', amb: '_wantAmb' };
+  function stopSlot(slot) {
+    const b = DK[SLOT[slot]]; DK[SLOT[slot]] = null; if (!b) return;
     try {
       if (b.src) { const t = b.ctx.currentTime; b.gain.gain.setTargetAtTime(0, t, 0.15); b.src.stop(t + 0.6); }
       else if (b.snd) { b.snd.stop(); b.snd.destroy(); }
@@ -84,15 +87,22 @@
     for (let i = 0; i < max; i++) if (Math.abs(d[i]) > 0.0005) return i / buf.sampleRate;
     return 0;
   }
-  DK.music = function (scene, key) {
-    DK._wantBgm = key;
-    if (DK._bgm && DK._bgm.key === key) return;
-    stopBgm();
-    if (!key) { DK.logAudio('bgm', 'stop'); return; }
+  DK.loopPoints = function (key, buf) { // exact loop (MANIFEST length) after any MP3 encoder-delay silence at the head
+    const len = DK.BGM_LOOP[key]; if (!len || len > buf.duration + 0.001) return null;
+    const start = Math.min(leadSilence(buf), Math.max(0, buf.duration - len)); // decoder may or may not trim the encoder delay
+    return { start, end: Math.min(buf.duration, start + len) };
+  };
+  function playLoop(scene, key, slot) {
+    DK[WANT[slot]] = key;
+    const cur = DK[SLOT[slot]];
+    if (cur && cur.key === key) return;
+    stopSlot(slot);
+    if (!key) { DK.logAudio(slot, 'stop'); return; }
     if (!scene.cache.audio.exists(key)) { DK.logAudio(key, 'missing'); return; } // missing -> silence
     const snd = scene.sound;
     if (snd.locked) {
-      if (!DK._waitUnlock) { DK._waitUnlock = true; snd.once('unlocked', () => { DK._waitUnlock = false; const k = DK._wantBgm; DK._wantBgm = null; if (k) DK.music(scene, k); }); }
+      const wk = '_waitUnlock_' + slot;
+      if (!DK[wk]) { DK[wk] = true; snd.once('unlocked', () => { DK[wk] = false; const k = DK[WANT[slot]]; DK[WANT[slot]] = null; if (k) playLoop(scene, k, slot); }); }
       return;
     }
     const base = DK.SFX_VOL[key] != null ? DK.SFX_VOL[key] : 0.55;
@@ -101,22 +111,43 @@
       if (snd.context && buf && buf.getChannelData) {
         const ctx = snd.context, src = ctx.createBufferSource(), gain = ctx.createGain();
         src.buffer = buf; src.loop = true;
-        const len = DK.BGM_LOOP[key], lead = leadSilence(buf);
-        if (len && lead + len <= buf.duration + 0.001) { src.loopStart = lead; src.loopEnd = lead + len; }
+        const lp = DK.loopPoints(key, buf);
+        if (lp) { src.loopStart = lp.start; src.loopEnd = lp.end; }
         gain.gain.value = base * DK.vol.music;
         src.connect(gain); gain.connect(snd.destination || ctx.destination);
         src.start(0, src.loopStart || 0);
-        DK._bgm = { key, src, gain, ctx, base, loopStart: src.loopStart, loopEnd: src.loopEnd };
+        DK[SLOT[slot]] = { key, src, gain, ctx, base, loopStart: src.loopStart, loopEnd: src.loopEnd, t0: ctx.currentTime };
       } else { // HTML5 audio fallback
         const s2 = snd.add(key, { loop: true, volume: base * DK.vol.music }); s2.play();
-        DK._bgm = { key, snd: s2, base };
+        DK[SLOT[slot]] = { key, snd: s2, base };
       }
-      DK.logAudio(key, 'bgm');
+      DK.logAudio(key, slot);
     } catch (e) { DK.logAudio(key, 'error'); }
+  }
+  DK.music = (scene, key) => playLoop(scene, key, 'bgm');
+  // Bar-quantised phase switch (声音王: boss p1/p2/p3, 150 BPM = 1.6 s bars): the next track starts on the next bar line of the
+  // current one, old fades out over 0.4 s, new comes in over 0.3 s (its crash/downbeat stays audible). Levels are NOT normalised.
+  DK.musicPhase = function (scene, key, bar) {
+    bar = bar || 1.6;
+    const cur = DK._bgm;
+    if (!cur || !cur.src || cur.key === key || !scene.cache.audio.exists(key) || !scene.cache.audio.get(key).getChannelData) return DK.music(scene, key);
+    DK._wantBgm = key;
+    try {
+      const ctx = cur.ctx, now = ctx.currentTime, el = now - cur.t0, tNext = cur.t0 + Math.ceil((el + 0.05) / bar) * bar;
+      const buf = scene.cache.audio.get(key), src = ctx.createBufferSource(), gain = ctx.createGain(), lp = DK.loopPoints(key, buf);
+      const base = DK.SFX_VOL[key] != null ? DK.SFX_VOL[key] : 0.55;
+      src.buffer = buf; src.loop = true; if (lp) { src.loopStart = lp.start; src.loopEnd = lp.end; }
+      gain.gain.setValueAtTime(0.3 * base * DK.vol.music, tNext); gain.gain.linearRampToValueAtTime(base * DK.vol.music, tNext + 0.3);
+      src.connect(gain); gain.connect(scene.sound.destination || ctx.destination); src.start(tNext, src.loopStart || 0);
+      cur.gain.gain.setValueAtTime(cur.gain.gain.value, tNext); cur.gain.gain.linearRampToValueAtTime(0, tNext + 0.4); cur.src.stop(tNext + 0.45);
+      DK._bgm = { key, src, gain, ctx, base, loopStart: src.loopStart, loopEnd: src.loopEnd, t0: tNext };
+      DK.logAudio(key, 'bgm-phase@' + (tNext - now).toFixed(2));
+    } catch (e) { DK.music(scene, key); }
   };
+  DK.ambient = (scene, key) => playLoop(scene, key, 'amb');
   DK.applyMusicVolume = function () {
-    const b = DK._bgm; if (!b) return;
-    try { if (b.gain) b.gain.gain.value = b.base * DK.vol.music; else if (b.snd) b.snd.setVolume(b.base * DK.vol.music); } catch (e) {}
+    for (const b of [DK._bgm, DK._amb]) { if (!b) continue;
+      try { if (b.gain) b.gain.gain.value = b.base * DK.vol.music; else if (b.snd) b.snd.setVolume(b.base * DK.vol.music); } catch (e) {} }
   };
   // audio event log (for testing): __dbg.audioLog()
   DK.audioLog = [];
