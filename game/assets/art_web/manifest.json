@@ -2251,6 +2251,29 @@
    "sheet_layout": "8x1 horizontal strip",
    "res_scale": 0.75,
    "src_sig": "[\"props/campfire_sheet.png\",\"props/campfire_00.png\",[256,256],8,[128,244]]"
+  },
+  {
+   "name": "boss_turret",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    330,
+    132
+   ],
+   "frame_count": 1,
+   "anchor": [
+    99.0,
+    66.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Anvil tank turret, top-down plan view, cannon points right; anchor = turret ring centre = game origin (0.3,0.5). Game key boss_turret (110x44 logical, 4x). Matches Anvil red armour, hazard stripes, red optics.",
+   "origin": [
+    0.3,
+    0.5
+   ],
+   "file": "boss/boss_turret.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"boss/boss_turret.png\",[440,176],1,[132,88]]"
   }
  ]
 }

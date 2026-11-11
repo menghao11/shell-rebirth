@@ -2441,6 +2441,29 @@
    "purpose": "rest-stop campfire (game key 'campfire'): stone ring, logs, tin coffee pot; flames flicker in a seamless 8-frame loop (frames sampled evenly from a first/last-pinned video, so 07 -> 00 wraps cleanly); anchor bottom-centre = stone ring ground contact",
    "sheet": "props/campfire_sheet.png",
    "sheet_layout": "8x1 horizontal strip"
+  },
+  {
+   "name": "boss_turret",
+   "group": "boss/铁砧坦克 Anvil Tank (1500HP)",
+   "frame_size": [
+    440,
+    176
+   ],
+   "frame_count": 1,
+   "frames": [
+    "boss/boss_turret.png"
+   ],
+   "anchor": [
+    132,
+    88
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Anvil tank turret, top-down plan view, cannon points right; anchor = turret ring centre = game origin (0.3,0.5). Game key boss_turret (110x44 logical, 4x). Matches Anvil red armour, hazard stripes, red optics.",
+   "origin": [
+    0.3,
+    0.5
+   ]
   }
  ],
  "specs": {

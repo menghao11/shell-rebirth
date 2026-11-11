@@ -3356,7 +3356,9 @@
       ],
       "fps": null,
       "loop": false,
-      "purpose": "Boss intro dialogue bust, matches Anvil portrait convention."
+      "purpose": "Boss dialogue portrait: HEAD close-up of the drill maw, red sensor eyes and front dorsal turret (512x512, bust cut at bottom, faces right). Crop of the generated portrait master.",
+      "portrait_kind": "head close-up",
+      "source": "stage2/boss/raw/sandwhale_portrait.png crop (395,215)-(1035,855) -> 512"
     },
     {
       "name": "sandwhale_debris_shard",
@@ -3453,6 +3455,122 @@
       "sheet_rows": 1,
       "source": "stage2 s2_blowing_sand, scaled cartoon family",
       "intentional_soft_alpha": true
+    },
+    {
+      "name": "grenade_target_circle",
+      "group": "fx",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 8,
+      "frames": [
+        "fx/grenade_target_circle_00.png",
+        "fx/grenade_target_circle_01.png",
+        "fx/grenade_target_circle_02.png",
+        "fx/grenade_target_circle_03.png",
+        "fx/grenade_target_circle_04.png",
+        "fx/grenade_target_circle_05.png",
+        "fx/grenade_target_circle_06.png",
+        "fx/grenade_target_circle_07.png"
+      ],
+      "anchor": [
+        128,
+        128
+      ],
+      "fps": 12,
+      "loop": true,
+      "purpose": "TRUE-circle blast-radius ring (radius 108 px of 256 = same horizontal radius as the s2_landing_target ellipse); same 8 frames, colours, pulse and fps. s2_landing_target kept unchanged.",
+      "sheet": "fx/grenade_target_circle_sheet.png",
+      "sheet_layout": "8x1 horizontal strip",
+      "twin_of": "s2_landing_target",
+      "radius_px": 108
+    },
+    {
+      "name": "wall_desert",
+      "group": "walls",
+      "frame_size": [
+        256,
+        256
+      ],
+      "frame_count": 1,
+      "frames": [
+        "walls/wall_desert.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Seamless desert sandstone wall, tiles both axes (game key wall_desert, 64x64 logical; 4x). Same running-bond layout logic as the stage-1 steel wall, rusty riveted brackets.",
+      "opaque": true
+    },
+    {
+      "name": "wall_desert_128",
+      "group": "walls",
+      "frame_size": [
+        128,
+        128
+      ],
+      "frame_count": 1,
+      "frames": [
+        "walls/wall_desert_128.png"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "wall_desert box-downscaled to 128 (2x for the 64-px logical tile); seamless both axes.",
+      "opaque": true
+    },
+    {
+      "name": "sw_turret",
+      "group": "parts",
+      "frame_size": [
+        240,
+        104
+      ],
+      "frame_count": 1,
+      "frames": [
+        "parts/sw_turret.png"
+      ],
+      "anchor": [
+        60,
+        52
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Sandwhale dorsal turret, top-down plan view, barrels point right. Game draws it at 60x26 logical with origin (0.25,0.5) = this anchor; used when the body art is unavailable.",
+      "origin": [
+        0.25,
+        0.5
+      ]
+    },
+    {
+      "name": "sw_core",
+      "group": "parts",
+      "frame_size": [
+        208,
+        208
+      ],
+      "frame_count": 1,
+      "frames": [
+        "parts/sw_core.png"
+      ],
+      "anchor": [
+        104,
+        104
+      ],
+      "fps": null,
+      "loop": false,
+      "purpose": "Exposed Echo Pod core weak point (cyan orb in bolted socket), centred; game draws 52x52 and pulses/tints it.",
+      "origin": [
+        0.5,
+        0.5
+      ]
     }
   ],
   "specs": {

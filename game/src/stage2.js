@@ -319,7 +319,15 @@
     const x0 = e.x, y0 = e.y - 10, now = T(scene);
     const spr = scene.add.sprite(x0, y0, 'enemy_grenade').setDepth(870); DK.applyArt(spr, 'enemy_grenade'); const spin = DK.hasArt('s2_grenade_spin'); if (spin) spr.play('s2_grenade_spin');
     const sh = scene.add.ellipse(x0, y0 + 8, 12, 5, 0x000000, 0.35).setDepth(1);
-    const gr = { alive: true, spr, sh, x0, y0, x1, y1, x: x0, y: y0, t0: now, flight: o.flight || c.flight, fuse: o.fuse || c.fuse, radius: r, dmg: Math.min(o.dmg || c.dmg, c.maxHpFrac * scene.run.maxHp), landed: false, src: o.src || 'grenadier', shootable: c.shootable && o.shootable !== false, spin };
+    let mark = null;
+    if (DK.hasArt('grenade_target_circle')) {
+      // Art circle radius is 107.5 px on a 256 px canvas; scale so the visual radius equals the blast radius.
+      const disp = r * 256 / 107.5;
+      mark = scene.add.sprite(x1, y1, 'grenade_target_circle').setDepth(850).setOrigin(0.5, 0.5);
+      mark.setDisplaySize(disp, disp);
+      if (scene.anims.exists('grenade_target_circle')) mark.play('grenade_target_circle');
+    }
+    const gr = { alive: true, spr, sh, mark, x0, y0, x1, y1, x: x0, y: y0, t0: now, flight: o.flight || c.flight, fuse: o.fuse || c.fuse, radius: r, dmg: Math.min(o.dmg || c.dmg, c.maxHpFrac * scene.run.maxHp), landed: false, src: o.src || 'grenadier', shootable: c.shootable && o.shootable !== false, spin };
     gr.log = { thrownAt: now, warnAt: now, explodeAt: null, landAt: null, x: x1, y: y1, radius: r, blast: r, fuse: gr.fuse, early: false, playerHit: false, playerDist: null };
     DK.s2log.grenade.push(gr.log);
     (scene.eGrenades = scene.eGrenades || []).push(gr);
@@ -329,7 +337,7 @@
   DK.detonateEnemyGrenade = function (scene, gr, early) {
     if (!gr.alive) return; gr.alive = false;
     const x = early ? gr.x : gr.x1, y = early ? gr.y : gr.y1;
-    gr.spr.destroy(); gr.sh.destroy();
+    gr.spr.destroy(); gr.sh.destroy(); if (gr.mark) gr.mark.destroy();
     gr.log.explodeAt = T(scene); gr.log.early = !!early; if (early) { gr.log.x = x; gr.log.y = y; }
     DK.sfx(scene, 's2_grenade_explode', { minGap: 40 });
     // shot down: hurts the 沙蝎 around it (reward for shooting it), never the player at full strength
@@ -362,12 +370,17 @@
     for (const gr of list) {
       if (!gr.alive) continue;
       const k = Math.min(1, (now - gr.t0) / gr.fuse), blink = Math.floor(now * (k > 0.7 ? 16 : 8)) % 2;
-      g.fillStyle(0xff3030, 0.10 + 0.18 * k).fillCircle(gr.x1, gr.y1, gr.radius);
-      g.lineStyle(3, 0xff3030, blink ? 0.95 : 0.6).strokeCircle(gr.x1, gr.y1, gr.radius); // == blast radius
-      g.lineStyle(2, 0xffd0a0, 0.8).strokeCircle(gr.x1, gr.y1, Math.max(2, gr.radius * (1 - k))); // countdown ring closes in
+      if (gr.mark && gr.mark.active) {
+        gr.mark.setAlpha(blink ? 1 : 0.7);
+        g.lineStyle(2, 0xffd0a0, 0.8).strokeCircle(gr.x1, gr.y1, Math.max(2, gr.radius * (1 - k))); // countdown ring closes in
+      } else {
+        g.fillStyle(0xff3030, 0.10 + 0.18 * k).fillCircle(gr.x1, gr.y1, gr.radius);
+        g.lineStyle(3, 0xff3030, blink ? 0.95 : 0.6).strokeCircle(gr.x1, gr.y1, gr.radius); // == blast radius
+        g.lineStyle(2, 0xffd0a0, 0.8).strokeCircle(gr.x1, gr.y1, Math.max(2, gr.radius * (1 - k)));
+      }
     }
   };
-  DK.clearEnemyGrenades = function (scene) { (scene.eGrenades || []).forEach(gr => { if (gr.alive) { gr.alive = false; gr.spr.destroy(); gr.sh.destroy(); } }); scene.eGrenades = []; };
+  DK.clearEnemyGrenades = function (scene) { (scene.eGrenades || []).forEach(gr => { if (gr.alive) { gr.alive = false; gr.spr.destroy(); gr.sh.destroy(); if (gr.mark) gr.mark.destroy(); } }); scene.eGrenades = []; };
 
   // ------------------------------------------------------------ 骆驼 dismount (art: camel_dismount 10 f @12 fps; corpse at 04, foot actor at 09)
   DK.camelDismount = function (scene, e, spawnRider) {
