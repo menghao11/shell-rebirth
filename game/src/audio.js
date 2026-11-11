@@ -5,10 +5,21 @@
   DK.SFX_DEFAULT_VOL = 0.9;
   DK.BGM_LOOP = { bgm_stage1: 50.526, bgm_boss: 33.882, bgm_title: 30.000 }; // exact loop lengths from audio/MANIFEST.md
   DK.vol = { music: 0.8, sfx: 0.9 };
-  try { const v = JSON.parse(localStorage.getItem('dankelunhui_vol') || 'null'); if (v) Object.assign(DK.vol, v); } catch (e) {}
+  DK.ensureVol = function () {
+    if (!DK.vol || typeof DK.vol !== 'object') DK.vol = { music: 0.8, sfx: 0.9 };
+    if (typeof DK.vol.music !== 'number' || !isFinite(DK.vol.music)) DK.vol.music = 0.8;
+    if (typeof DK.vol.sfx !== 'number' || !isFinite(DK.vol.sfx)) DK.vol.sfx = 0.9;
+    return DK.vol;
+  };
+  try {
+    const v = DK.storeGetJSON('dankelunhui_vol', null);
+    if (v && typeof v === 'object') Object.assign(DK.vol, v);
+  } catch (e) {}
+  DK.ensureVol();
   DK.setVolume = function (kind, v) {
+    DK.ensureVol();
     DK.vol[kind] = Math.max(0, Math.min(1, Math.round(v * 10) / 10));
-    try { localStorage.setItem('dankelunhui_vol', JSON.stringify(DK.vol)); } catch (e) {}
+    try { DK.storeSetJSON('dankelunhui_vol', DK.vol); } catch (e) {}
     if (kind === 'music') DK.applyMusicVolume();
   };
   // Fallback synth recipes: [type, freqStart, freqEnd, dur, gain, noise?]
@@ -54,7 +65,7 @@
       k = vars.length ? vars[(Math.random() * vars.length) | 0] : null;
     }
     const bv = k && DK.SFX_VOL[k] != null ? DK.SFX_VOL[k] : DK.SFX_VOL[key] != null ? DK.SFX_VOL[key] : DK.SFX_DEFAULT_VOL; // per-file volume (stage-2 MANIFEST) wins
-    const vol = (opts.volume != null ? opts.volume : 1) * bv * DK.vol.sfx;
+    const vol = (opts.volume != null ? opts.volume : 1) * bv * DK.ensureVol().sfx;
     if (vol <= 0) return null;
     try {
       if (k) {
@@ -113,12 +124,12 @@
         src.buffer = buf; src.loop = true;
         const lp = DK.loopPoints(key, buf);
         if (lp) { src.loopStart = lp.start; src.loopEnd = lp.end; }
-        gain.gain.value = base * DK.vol.music;
+        gain.gain.value = base * DK.ensureVol().music;
         src.connect(gain); gain.connect(snd.destination || ctx.destination);
         src.start(0, src.loopStart || 0);
         DK[SLOT[slot]] = { key, src, gain, ctx, base, loopStart: src.loopStart, loopEnd: src.loopEnd, t0: ctx.currentTime };
       } else { // HTML5 audio fallback
-        const s2 = snd.add(key, { loop: true, volume: base * DK.vol.music }); s2.play();
+        const s2 = snd.add(key, { loop: true, volume: base * DK.ensureVol().music }); s2.play();
         DK[SLOT[slot]] = { key, snd: s2, base };
       }
       DK.logAudio(key, slot);
@@ -137,7 +148,7 @@
       const buf = scene.cache.audio.get(key), src = ctx.createBufferSource(), gain = ctx.createGain(), lp = DK.loopPoints(key, buf);
       const base = DK.SFX_VOL[key] != null ? DK.SFX_VOL[key] : 0.55;
       src.buffer = buf; src.loop = true; if (lp) { src.loopStart = lp.start; src.loopEnd = lp.end; }
-      gain.gain.setValueAtTime(0.3 * base * DK.vol.music, tNext); gain.gain.linearRampToValueAtTime(base * DK.vol.music, tNext + 0.3);
+      gain.gain.setValueAtTime(0.3 * base * DK.ensureVol().music, tNext); gain.gain.linearRampToValueAtTime(base * DK.ensureVol().music, tNext + 0.3);
       src.connect(gain); gain.connect(scene.sound.destination || ctx.destination); src.start(tNext, src.loopStart || 0);
       cur.gain.gain.setValueAtTime(cur.gain.gain.value, tNext); cur.gain.gain.linearRampToValueAtTime(0, tNext + 0.4); cur.src.stop(tNext + 0.45);
       DK._bgm = { key, src, gain, ctx, base, loopStart: src.loopStart, loopEnd: src.loopEnd, t0: tNext };
@@ -147,7 +158,7 @@
   DK.ambient = (scene, key) => playLoop(scene, key, 'amb');
   DK.applyMusicVolume = function () {
     for (const b of [DK._bgm, DK._amb]) { if (!b) continue;
-      try { if (b.gain) b.gain.gain.value = b.base * DK.vol.music; else if (b.snd) b.snd.setVolume(b.base * DK.vol.music); } catch (e) {} }
+      try { if (b.gain) b.gain.gain.value = b.base * DK.ensureVol().music; else if (b.snd) b.snd.setVolume(b.base * DK.ensureVol().music); } catch (e) {} }
   };
   // audio event log (for testing): __dbg.audioLog()
   DK.audioLog = [];

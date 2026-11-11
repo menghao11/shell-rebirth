@@ -1,6 +1,47 @@
 // 《弹壳轮回》 game data — every tunable number lives here.
 window.DK = window.DK || {};
 (function (DK) {
+  // localStorage may throw in private mode / blocked storage. Memory fallback; unread keys
+  // behave like a first visit. Never throw to the page.
+  DK._mem = Object.create(null);
+  DK._storageOk = null;
+  DK.storageAvailable = function () {
+    if (DK._storageOk != null) return DK._storageOk;
+    try {
+      const k = '__dk_t';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return (DK._storageOk = true);
+    } catch (e) { return (DK._storageOk = false); }
+  };
+  DK.storeGet = function (key, fallback) {
+    try {
+      if (DK.storageAvailable()) {
+        const v = localStorage.getItem(key);
+        if (v != null) return v;
+      }
+    } catch (e) { DK._storageOk = false; }
+    return Object.prototype.hasOwnProperty.call(DK._mem, key) ? DK._mem[key] : fallback;
+  };
+  DK.storeSet = function (key, value) {
+    DK._mem[key] = String(value);
+    try { if (DK.storageAvailable()) { localStorage.setItem(key, String(value)); return true; } }
+    catch (e) { DK._storageOk = false; }
+    return false;
+  };
+  DK.storeRemove = function (key) {
+    delete DK._mem[key];
+    try { if (DK.storageAvailable()) localStorage.removeItem(key); } catch (e) { DK._storageOk = false; }
+  };
+  DK.storeGetJSON = function (key, fallback) {
+    const raw = DK.storeGet(key, null);
+    if (raw == null || raw === '') return fallback;
+    try { const v = JSON.parse(raw); return v == null ? fallback : v; } catch (e) { return fallback; }
+  };
+  DK.storeSetJSON = function (key, obj) {
+    try { return DK.storeSet(key, JSON.stringify(obj)); } catch (e) { return false; }
+  };
+
   DK.VERSION = '0.2.0-stage2';
   DK.W = 960; DK.H = 540;           // logical play-field size (one room = one screen)
   DK.M = 32;                        // 1 meter (design doc) = 32 logical px

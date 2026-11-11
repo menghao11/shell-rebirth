@@ -68,3 +68,10 @@ python3 tools/build_web_intro.py
 - 主游戏素材在动画播放期间加载；进度画在回响舱外圈。跳过时若还没载完，会停在 Logo 等到 `DK.ready` 再进铁皮屋。
 - iOS / 自动播放被拦时：画面仍按 cue 走。声音只能在一次用户手势之后开始。第一次点按既会解锁音频，也会按跳过逻辑进入标题（并在解锁后开始 `bgm_title`）。若自动播放成功，则在 0 秒准时播 `intro_full`。
 - 测试可调用 `DK.skipBootIntro()`，或预先写入上述 localStorage 键。
+
+
+## 隐私模式与慢网
+
+- 所有 `localStorage` 读写都走 `DK.storeGet` / `DK.storeSet`（`data.js`）。存储被拦截时视为首次访问，音量等设置用内存里的默认值（音乐 0.8、音效 0.9），`finish()` 在音频实例为空时仍会进入铁皮屋。
+- 跳过监听在 `window`/`document` 上还有 `pointerdown` / `touchstart`（passive），点到画布外的黑边也能跳过；`skip()` / `finish()` 只进一次基地。
+- 页面一打开就用纯 CSS 显示「弹壳轮回」和细进度环（`#boot-splash`，无大图）。`MainLoad` 场景与 Intro 的开机包并行下载主资源，不再等开机包装完才开始拉主包。

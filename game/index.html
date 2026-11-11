@@ -40,10 +40,37 @@
   #rotate button { font:inherit; font-size:15px; padding:8px 18px; border-radius:8px; border:1px solid #f2e6c9; background:none; color:#f2e6c9; }
   @keyframes rot { 0%,30%{transform:rotate(0)} 60%,100%{transform:rotate(90deg)} }
   @media (orientation: portrait) and (pointer: coarse) { body:not(.rotate-ok) #rotate { display:flex; } }
+  /* Instant first paint: no image assets. Hidden when the intro cinematic starts. */
+  #boot-splash { position:fixed; inset:0; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:#0d0d0f; color:#f2c14e; font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    pointer-events:none; }
+  #boot-splash .title { font-size:42px; font-weight:700; letter-spacing:.08em; text-shadow:0 2px 0 #000, 0 0 24px rgba(0,0,0,.8); }
+  #boot-splash .sub { margin-top:8px; font-size:14px; color:#cfcfcf; letter-spacing:.35em; }
+  #boot-splash .ring { margin-top:28px; width:36px; height:36px; border:3px solid #333; border-top-color:#f2c14e; border-radius:50%;
+    animation: dkspin .9s linear infinite; }
+  #boot-splash .hint { margin-top:12px; font-size:13px; color:#888; letter-spacing:0; }
+  #boot-splash.hide { opacity:0; transition:opacity .25s linear; }
+  @keyframes dkspin { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
 <div id="game"></div>
+<div id="boot-splash">
+  <div class="title">弹壳轮回</div>
+  <div class="sub">SHELL REBIRTH</div>
+  <div class="ring" aria-hidden="true"></div>
+  <div class="hint" id="boot-hint">载入中…</div>
+</div>
+<script>
+  window.__dkFirstVisible = performance.now();
+  window.DK = window.DK || {};
+  DK.updateBootHint = function () {
+    const el = document.getElementById('boot-hint');
+    if (!el) return;
+    const p = (DK.introProgress != null) ? DK.introProgress : 0;
+    el.textContent = p > 0.002 ? ('载入 ' + Math.min(99, Math.round(p * 100)) + '%') : '载入中…';
+  };
+</script>
 <div id="pad"></div>
 <div id="safe"></div>
 <div id="rotate"><div class="phone">📱</div><div>请把手机横过来玩<br><small>（竖屏也能玩，但画面会很小）</small></div><button id="rotate-ok">仍然继续</button></div>
@@ -55,26 +82,26 @@
   document.addEventListener('dblclick', function(ev){ ev.preventDefault(); }, {passive:false});
   document.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
 </script>
-<script src="vendor/phaser.min.js?v=20261111intro"></script>
-<script src="src/data.js?v=20261111intro"></script>
-<script src="src/save.js?v=20261111intro"></script>
-<script src="src/assets.js?v=20261111intro"></script>
-<script src="src/audio.js?v=20261111intro"></script>
-<script src="src/story.js?v=20261111intro"></script>
-<script src="src/ui.js?v=20261111intro"></script>
-<script src="src/touch.js?v=20261111intro"></script>
-<script src="src/scenes/boot.js?v=20261111intro"></script>
-<script src="src/scenes/intro.js?v=20261111intro"></script>
-<script src="src/scenes/base.js?v=20261111intro"></script>
-<script src="src/combat.js?v=20261111intro"></script>
-<script src="src/enemies.js?v=20261111intro"></script>
-<script src="src/boss.js?v=20261111intro"></script>
-<script src="src/stage2.js?v=20261111intro"></script>
-<script src="src/sandwhale.js?v=20261111intro"></script>
-<script src="src/tutorial.js?v=20261111intro"></script>
-<script src="src/scenes/run.js?v=20261111intro"></script>
-<script src="src/scenes/result.js?v=20261111intro"></script>
-<script src="src/debug.js?v=20261111intro"></script>
-<script src="src/main.js?v=20261111intro"></script>
+<script defer src="vendor/phaser.min.js?v=20261111intro2"></script>
+<script defer src="src/data.js?v=20261111intro2"></script>
+<script defer src="src/save.js?v=20261111intro2"></script>
+<script defer src="src/assets.js?v=20261111intro2"></script>
+<script defer src="src/audio.js?v=20261111intro2"></script>
+<script defer src="src/story.js?v=20261111intro2"></script>
+<script defer src="src/ui.js?v=20261111intro2"></script>
+<script defer src="src/touch.js?v=20261111intro2"></script>
+<script defer src="src/scenes/boot.js?v=20261111intro2"></script>
+<script defer src="src/scenes/intro.js?v=20261111intro2"></script>
+<script defer src="src/scenes/base.js?v=20261111intro2"></script>
+<script defer src="src/combat.js?v=20261111intro2"></script>
+<script defer src="src/enemies.js?v=20261111intro2"></script>
+<script defer src="src/boss.js?v=20261111intro2"></script>
+<script defer src="src/stage2.js?v=20261111intro2"></script>
+<script defer src="src/sandwhale.js?v=20261111intro2"></script>
+<script defer src="src/tutorial.js?v=20261111intro2"></script>
+<script defer src="src/scenes/run.js?v=20261111intro2"></script>
+<script defer src="src/scenes/result.js?v=20261111intro2"></script>
+<script defer src="src/debug.js?v=20261111intro2"></script>
+<script defer src="src/main.js?v=20261111intro2"></script>
 </body>
 </html>

@@ -3,8 +3,8 @@
 // Completion is stored in localStorage; replay from 铁皮屋 → 设置 → 重玩教学关.
 (function (DK) {
   const KEY = 'dankelunhui_tutorial_v1';
-  DK.tutorialDone = () => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return true; } };
-  DK.setTutorialDone = () => { try { localStorage.setItem(KEY, '1'); } catch (e) {} };
+  DK.tutorialDone = () => { try { return DK.storeGet(KEY) === '1'; } catch (e) { return false; } };
+  DK.setTutorialDone = () => { try { DK.storeSet(KEY, '1'); } catch (e) {} };
   const T = () => DK.touchMode;
   DK.TUTORIAL_STEPS = [
     { id: 'move', hl: 'move',

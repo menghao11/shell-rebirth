@@ -44,8 +44,14 @@
   DK.INTRO_KEY = KEY;
   DK.INTRO_SLOTS = SLOTS;
   DK.introProgress = 0;
-  DK.introSeen = function () { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } };
-  DK.markIntroSeen = function () { try { localStorage.setItem(KEY, '1'); } catch (e) {} };
+  DK.introSeen = function () { try { return DK.storeGet(KEY) === '1'; } catch (e) { return false; } };
+  DK.markIntroSeen = function () { try { DK.storeSet(KEY, '1'); } catch (e) {} };
+  DK.hideBootSplash = function () {
+    const el = document.getElementById('boot-splash');
+    if (!el || el.classList.contains('hide')) return;
+    el.classList.add('hide');
+    setTimeout(() => { try { el.remove(); } catch (e) {} }, 280);
+  };
   DK.skipBootIntro = function () {
     DK._skipIntro = true;
     DK.markIntroSeen();
@@ -346,9 +352,14 @@
       const go = () => this.skip();
       this.input.on('pointerdown', go);
       if (this.input.keyboard) this.input.keyboard.on('keydown', go);
-      // also catch keys/taps that land outside the canvas (mobile letterboxing)
+      // Letterbox / black-bar taps land on the document, not the canvas.
       this._onWinKey = ev => { ev && ev.preventDefault && ev.preventDefault(); this.skip(); };
+      this._onWinPointer = () => this.skip();
       window.addEventListener('keydown', this._onWinKey, { passive: false });
+      window.addEventListener('pointerdown', this._onWinPointer, { passive: true });
+      window.addEventListener('touchstart', this._onWinPointer, { passive: true });
+      document.addEventListener('pointerdown', this._onWinPointer, { passive: true });
+      document.addEventListener('touchstart', this._onWinPointer, { passive: true });
     }
 
     tryResumeAudio() {
@@ -410,6 +421,8 @@
 
     playCinematic() {
       this.startedAt = performance.now();
+      DK.introCineAt = this.startedAt;
+      if (DK.hideBootSplash) DK.hideBootSplash();
       if (this.mode === 'short') this.playShort(); else this.playFull();
     }
 
@@ -702,10 +715,27 @@
           this._cineStarted = true;
           this.playCinematic();
         }
+        // Main pack is already downloading on the parallel MainLoad scene (started from Boot).
+        // Only take over if that scene never launched.
+        if (DK.ready) { this.onLoaded(); return; }
+        if (this.scene.isActive('MainLoad') || DK._mainLoading) {
+          if (titleItem && !hasAud(this, SLOTS.bgmTitle)) {
+            DK.queueAssets(this, { images: [], audio: [titleItem] });
+            this.load.on('filecomplete-audio-' + SLOTS.bgmTitle, () => this.onTitleBgmLoaded());
+            if (this.load.list.size) this.load.start();
+          }
+          const waitReady = () => {
+            if (!this.scene.isActive()) return;
+            if (DK.ready) this.onLoaded();
+            else setTimeout(waitReady, 50);
+          };
+          waitReady();
+          return;
+        }
         try {
           const plan = (await mainPlanP) || await DK.discoverAssets() || { images: [], audio: [] };
           if (!this.scene.isActive()) return;
-          if (titleItem) plan.audio = [titleItem].concat(plan.audio || []); // load title BGM first among the rest, lazily after intro starts
+          if (titleItem) plan.audio = [titleItem].concat(plan.audio || []);
           DK.queueAssets(this, plan);
           this.load.on('progress', v => { DK.introProgress = v; });
           this.load.on('loaderror', f => { DK.assetReport.errors = (DK.assetReport.errors || []).concat(f.key + ':' + f.src); });
@@ -766,10 +796,16 @@
       if (!snd) return;
       try {
         if (ms <= 0) { this.stopIntroSnd(); return; }
-        this.tweens.add({
-          targets: snd, volume: 0, duration: ms,
-          onComplete: () => this.stopIntroSnd()
-        });
+        const vol0 = (snd.volume != null && isFinite(snd.volume)) ? snd.volume : 1;
+        const t0 = performance.now();
+        const tick = () => {
+          if (this.introSnd !== snd) return;
+          const k = Math.min(1, (performance.now() - t0) / ms);
+          try { if (snd && typeof snd.setVolume === 'function') snd.setVolume(vol0 * (1 - k)); } catch (e) {}
+          if (k >= 1) this.stopIntroSnd();
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
       } catch (e) { this.stopIntroSnd(); }
     }
 
@@ -816,11 +852,14 @@
     }
 
     onLoaded() {
-      if (this._finalized) return; this._finalized = true;
-      DK.finalizeAssets(this);
-      DK.initStory(this);
-      DK.ready = true;
-      DK.introProgress = 1;
+      if (DK.finishLoading) DK.finishLoading(this);
+      else {
+        if (this._finalized) return; this._finalized = true;
+        DK.finalizeAssets(this);
+        DK.initStory(this);
+        DK.ready = true;
+        DK.introProgress = 1;
+      }
       this.onTitleBgmLoaded();
       if (this._wantFinish || (this._cinematicDone && this.mode === 'short' && !this._finishing)) this.finish();
     }
@@ -845,17 +884,19 @@
         return;
       }
       this._finishing = true;
-      DK.markIntroSeen();
-      this.stopFx();
+      try { DK.markIntroSeen(); } catch (e) {}
+      try { this.stopFx(); } catch (e) {}
+      if (DK.hideBootSplash) DK.hideBootSplash();
       const fade = (opts && opts.fade != null) ? opts.fade : END_FADE;
       const go = () => {
+        if (this._goneToBase) return; this._goneToBase = true;
         if (this._skipAt) DK.introSkipMs = performance.now() - this._skipAt;
-        this.stopIntroSnd();
-        this.startTitleBgm();
+        try { this.stopIntroSnd(); } catch (e) {}
+        try { this.startTitleBgm(); } catch (e) {}
         if (DK.current === this) DK.current = null;
-        this.scene.start('Base');
+        try { this.scene.start('Base'); } catch (e) { try { this.scene.start('Base'); } catch (e2) {} }
       };
-      this.fadeIntroFull(fade);
+      try { this.fadeIntroFull(fade); } catch (e) {}
       if (fade <= 0) go();
       else {
         let gone = false;
@@ -872,6 +913,13 @@
       (this.beats || []).forEach(ev => ev && ev.remove && ev.remove(false));
       this.beats = [];
       if (this._onWinKey) { window.removeEventListener('keydown', this._onWinKey); this._onWinKey = null; }
+      if (this._onWinPointer) {
+        window.removeEventListener('pointerdown', this._onWinPointer);
+        window.removeEventListener('touchstart', this._onWinPointer);
+        document.removeEventListener('pointerdown', this._onWinPointer);
+        document.removeEventListener('touchstart', this._onWinPointer);
+        this._onWinPointer = null;
+      }
     }
 
     shutdown() { this.stopFx(); this.stopIntroSnd(); }
