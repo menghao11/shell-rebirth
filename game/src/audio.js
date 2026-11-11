@@ -1,9 +1,9 @@
 // Sound: plays loaded files by key (with _1/_2 variants), otherwise a tiny WebAudio synth placeholder.
 (function (DK) {
   // Per-key base volume (audio/MANIFEST.md suggests SFX 0.8–1.0, BGM 0.5–0.6). Multiplied by the user's 音效/音乐 settings.
-  DK.SFX_VOL = { shoot_pistol: 0.75, shoot_pistol_power: 0.9, shoot_mg: 0.6, shoot_mg_1: 0.6, shoot_mg_2: 0.6, shoot_split: 0.7, enemy_hit: 0.6, sniper_warn: 0.8, bgm_stage1: 0.55, bgm_boss: 0.6 };
+  DK.SFX_VOL = { shoot_pistol: 0.75, shoot_pistol_power: 0.9, shoot_mg: 0.6, shoot_mg_1: 0.6, shoot_mg_2: 0.6, shoot_split: 0.7, enemy_hit: 0.6, sniper_warn: 0.8, bgm_stage1: 0.55, bgm_boss: 0.6, bgm_title: 0.55, intro_full: 1.0, pulse_heartbeat: 0.8, hatch_hiss: 0.9, casing_clink_1: 0.9, casing_clink_2: 0.9, logo_hit: 1.0 };
   DK.SFX_DEFAULT_VOL = 0.9;
-  DK.BGM_LOOP = { bgm_stage1: 50.526, bgm_boss: 33.882 }; // exact loop lengths from audio/MANIFEST.md
+  DK.BGM_LOOP = { bgm_stage1: 50.526, bgm_boss: 33.882, bgm_title: 30.000 }; // exact loop lengths from audio/MANIFEST.md
   DK.vol = { music: 0.8, sfx: 0.9 };
   try { const v = JSON.parse(localStorage.getItem('dankelunhui_vol') || 'null'); if (v) Object.assign(DK.vol, v); } catch (e) {}
   DK.setVolume = function (kind, v) {

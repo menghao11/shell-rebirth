@@ -1,0 +1,290 @@
+{
+ "style": "polished cartoon, smooth anti-aliased (not pixel art), 3/4 top-down world",
+ "view": "3/4 top-down; logo/UI flat",
+ "units": "px",
+ "specs": {
+  "boot_storyboard": "1 pod blink (intro_pod_blink) -> 2 intro_pod_open + intro_flash@04 + intro_steam_burst@05, casings fall (intro_shell_spin, bounce in code, intro_glint on impact) -> 3 casings fly into place, intro_logo appears + intro_logo_shine -> 4 点击开始 over intro_title_bg (text is UI code).",
+  "canvas_contract": "One frame size + anchor per animation set: pod 640x640@(320,610); shell 256x256@(128,128); flash/steam 512x512; glint 128x128; logo 1600x640@(800,320); bg 1920x1080@(0,0).",
+  "build": "python art_src/intro_build.py && python art_src/intro_fixes_verify.py (run after the stage-2 chain).",
+  "soft_alpha": "FX, steam and logo shadow use intentional soft alpha (flagged intentional_soft_alpha)."
+ },
+ "assets": [
+  {
+   "name": "intro_logo",
+   "group": "logo",
+   "frame_size": [
+    800,
+    320
+   ],
+   "frame_count": 1,
+   "anchor": [
+    400.0,
+    160.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Typeset title 弹壳轮回 + SHELL REBIRTH (NotoSansCJK SC Bold / Black Ops One), brass + gunmetal bevel, dark outline, drop shadow. Exact glyphs from fonts.",
+   "text": "弹壳轮回",
+   "subtitle": "SHELL REBIRTH",
+   "text_method": "font typesetting, not model lettering",
+   "intentional_soft_alpha": true,
+   "file": "logo/intro_logo.png",
+   "res_scale": 0.5,
+   "src_sig": "[null,\"logo/intro_logo.png\",[1600,640],1,[800,320]]"
+  },
+  {
+   "name": "intro_logo_shine",
+   "group": "logo",
+   "frame_size": [
+    800,
+    320
+   ],
+   "frame_count": 16,
+   "anchor": [
+    400.0,
+    160.0
+   ],
+   "fps": 24,
+   "loop": false,
+   "purpose": "One-shot metallic glint sweeping across the logo (full composited frames, same canvas/anchor as intro_logo). End on intro_logo.",
+   "sheet": "logo/intro_logo_shine_sheet.png",
+   "sheet_layout": "2x8 row-major grid",
+   "sheet_columns": 5,
+   "sheet_rows": 4,
+   "intentional_soft_alpha": true,
+   "returns_to": "intro_logo",
+   "res_scale": 0.5,
+   "src_sig": "[\"logo/intro_logo_shine_sheet.png\",\"logo/intro_logo_shine_00.png\",[1600,640],16,[800,320]]"
+  },
+  {
+   "name": "intro_shell_spin",
+   "group": "shell",
+   "frame_size": [
+    192,
+    192
+   ],
+   "frame_count": 12,
+   "anchor": [
+    96.0,
+    96.0
+   ],
+   "fps": 20,
+   "loop": true,
+   "purpose": "Brass casing tumbling end-over-end in 3D (shows primer base and open mouth), 30°/frame, fixed upper-left light. Translate the sprite in code for falls and bounces.",
+   "sheet": "shell/intro_shell_spin_sheet.png",
+   "sheet_layout": "12x1 horizontal strip",
+   "sheet_columns": 12,
+   "sheet_rows": 1,
+   "collision_radius": 0,
+   "method": "3D tumble: orthographic raymarch of a solid-of-revolution casing, 30°/frame about a tilted axis, cel shading, fixed upper-left world light; per-frame alpha-centroid registration",
+   "fallback": "INTRO_FALLBACK=1 -> flat in-plane vector spin (intro_shell.py)",
+   "res_scale": 0.75,
+   "src_sig": "[\"shell/intro_shell_spin_sheet.png\",\"shell/intro_shell_spin_00.png\",[256,256],12,[128,128]]"
+  },
+  {
+   "name": "intro_shell_rest",
+   "group": "shell",
+   "frame_size": [
+    192,
+    192
+   ],
+   "frame_count": 1,
+   "anchor": [
+    96.0,
+    96.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Settled casing (for the logo formation / floor scatter). Same canvas/anchor as intro_shell_spin.",
+   "file": "shell/intro_shell_rest.png",
+   "res_scale": 0.75,
+   "src_sig": "[null,\"shell/intro_shell_rest.png\",[256,256],1,[128,128]]"
+  },
+  {
+   "name": "intro_flash",
+   "group": "fx",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 8,
+   "anchor": [
+    128.0,
+    128.0
+   ],
+   "fps": 24,
+   "loop": false,
+   "purpose": "Bright warm burst + cyan shock ring (pod unlatch / logo slam). Additive blend recommended.",
+   "sheet": "fx/intro_flash_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "sheet_columns": 8,
+   "sheet_rows": 1,
+   "intentional_soft_alpha": true,
+   "blend": "ADD or NORMAL",
+   "res_scale": 0.5,
+   "src_sig": "[\"fx/intro_flash_sheet.png\",\"fx/intro_flash_00.png\",[512,512],8,[256,256]]"
+  },
+  {
+   "name": "intro_glint",
+   "group": "fx",
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_count": 8,
+   "anchor": [
+    64.0,
+    64.0
+   ],
+   "fps": 20,
+   "loop": false,
+   "purpose": "Small four-point metal sparkle; pop on casings/logo edges.",
+   "sheet": "fx/intro_glint_sheet.png",
+   "sheet_layout": "8x1 horizontal strip",
+   "sheet_columns": 8,
+   "sheet_rows": 1,
+   "intentional_soft_alpha": true,
+   "res_scale": 1.0,
+   "src_sig": "[\"fx/intro_glint_sheet.png\",\"fx/intro_glint_00.png\",[128,128],8,[64,64]]"
+  },
+  {
+   "name": "intro_steam_burst",
+   "group": "fx",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 14,
+   "anchor": [
+    128.0,
+    240.0
+   ],
+   "fps": 16,
+   "loop": false,
+   "purpose": "One-shot cartoon steam burst rising from the pod vent; anchor = emitter (bottom centre).",
+   "sheet": "fx/intro_steam_burst_sheet.png",
+   "sheet_layout": "8x2 row-major grid",
+   "sheet_columns": 14,
+   "sheet_rows": 1,
+   "intentional_soft_alpha": true,
+   "res_scale": 0.5,
+   "src_sig": "[\"fx/intro_steam_burst_sheet.png\",\"fx/intro_steam_burst_00.png\",[512,512],14,[256,480]]"
+  },
+  {
+   "name": "intro_steam_loop",
+   "group": "fx",
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_count": 12,
+   "anchor": [
+    128.0,
+    240.0
+   ],
+   "fps": 12,
+   "loop": true,
+   "purpose": "Seamless lingering steam loop, same canvas/anchor as the burst.",
+   "sheet": "fx/intro_steam_loop_sheet.png",
+   "sheet_layout": "8x2 row-major grid",
+   "sheet_columns": 12,
+   "sheet_rows": 1,
+   "intentional_soft_alpha": true,
+   "res_scale": 0.5,
+   "src_sig": "[\"fx/intro_steam_loop_sheet.png\",\"fx/intro_steam_loop_00.png\",[512,512],12,[256,480]]"
+  },
+  {
+   "name": "intro_pod_blink",
+   "group": "pod",
+   "frame_size": [
+    320,
+    320
+   ],
+   "frame_count": 4,
+   "anchor": [
+    160.0,
+    305.0
+   ],
+   "fps": 4,
+   "loop": true,
+   "purpose": "Closed Echo Pod (回响舱), indicator lights blink in the dark (beat 1). Same canvas/anchor as intro_pod_open.",
+   "sheet": "pod/intro_pod_blink_sheet.png",
+   "sheet_layout": "4x1 horizontal strip",
+   "sheet_columns": 4,
+   "sheet_rows": 1,
+   "method": "first frame of the generated pod clip with its cyan emitters dimmed/brightened per frame",
+   "res_scale": 0.5,
+   "src_sig": "[\"pod/intro_pod_blink_sheet.png\",\"pod/intro_pod_blink_00.png\",[640,640],4,[320,610]]"
+  },
+  {
+   "name": "intro_pod_open",
+   "group": "pod",
+   "frame_size": [
+    320,
+    320
+   ],
+   "frame_count": 16,
+   "anchor": [
+    160.0,
+    305.0
+   ],
+   "fps": 12,
+   "loop": false,
+   "purpose": "Echo Pod door unlatch (04 jolt) and the armored double door splits and swings open on side hinges, revealing the glowing cyan chamber with a revived silhouette; hold last frame. Spawn intro_flash at 04 and intro_steam_burst at 05.",
+   "sheet": "pod/intro_pod_open_sheet.png",
+   "sheet_layout": "6x3 row-major grid",
+   "sheet_columns": 12,
+   "sheet_rows": 2,
+   "event_frames": {
+    "unlatch": 4,
+    "steam": 5,
+    "open_hold": 15
+   },
+   "hold_last": true,
+   "source_frames": [
+    0,
+    8,
+    16,
+    22,
+    26,
+    29,
+    32,
+    35,
+    38,
+    41,
+    44,
+    47,
+    50,
+    54,
+    58,
+    72
+   ],
+   "method": "Grok image-to-video (grok-imagine-video-1.5) of the generated closed pod art_src/intro/raw/echo_pod_closed.png; 16 of 73 keyed frames, one rigid scale 0.66 + offset; frames 00-03 carry the blink light levels",
+   "fallback": "INTRO_FALLBACK=1 -> editorial rig of echo_pod_master (door swung per column)",
+   "res_scale": 0.5,
+   "src_sig": "[\"pod/intro_pod_open_sheet.png\",\"pod/intro_pod_open_00.png\",[640,640],16,[320,610]]"
+  },
+  {
+   "name": "intro_title_bg",
+   "group": "bg",
+   "frame_size": [
+    960,
+    540
+   ],
+   "frame_count": 1,
+   "anchor": [
+    0.0,
+    0.0
+   ],
+   "fps": null,
+   "loop": false,
+   "purpose": "Title-screen background 1920x1080 (=960x540 logical x DPR2). Dedicated generated key art: glowing Echo Pod with steam, brass casings scattered on the bunker floor; upper-middle darkened for intro_logo. Opaque.",
+   "opaque": true,
+   "method": "dedicated Grok-generated key art (art_src/intro/raw/title_bg.png via intro_fixes_generate.py), resized + logo-band darkening",
+   "fallback": "INTRO_FALLBACK=1 -> composite of base_tinshack_bg + procedural casings",
+   "file": "bg/intro_title_bg.jpg",
+   "res_scale": 0.5,
+   "src_sig": "[null,\"bg/intro_title_bg.png\",[1920,1080],1,[0,0]]"
+  }
+ ]
+}

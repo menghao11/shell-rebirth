@@ -1,14 +1,19 @@
 // window.__dbg — reviewer/test commands. Type __dbg.help() in the browser console.
 (function (DK) {
   const run = () => DK.run;
-  const scene = () => DK.current;
+  const scene = () => {
+    if (DK.current && DK.current.scene && DK.current.scene.isActive()) return DK.current;
+    const g = DK.game; if (!g) return DK.current;
+    for (const k of ['Intro', 'Base', 'Run', 'Result', 'Boot']) { const s = g.scene.getScene(k); if (s && s.scene.isActive()) return s; }
+    return DK.current;
+  };
   const inRun = () => { const s = scene(); return s && s.scene && s.scene.key === 'Run' && s.scene.isActive() ? s : null; };
   function startRoom(idx, shopType) {
     const g = DK.game;
     if (!DK.run) DK.run = DK.newRun();
     const R = DK.roomsFor(DK.run); DK.run.room = Math.max(0, Math.min(R.length - 1, idx));
     if (shopType) DK.run.shopType = shopType;
-    ['Base', 'Result', 'Run'].forEach(k => { if (g.scene.isActive(k) && k !== 'Run') g.scene.stop(k); });
+    ['Intro', 'Base', 'Result', 'Run'].forEach(k => { if (g.scene.isActive(k) && k !== 'Run') g.scene.stop(k); });
     { const rs = g.scene.getScene('Run'); if (rs) for (const m of ['nextWave', 'spawnWithTelegraph', 'containEnemies', 'fireBullet']) if (Object.prototype.hasOwnProperty.call(rs, m)) delete rs[m]; } // tests stub these on the (reused) scene object; a fresh room gets the real methods back
     if (g.scene.isActive('Run')) g.scene.getScene('Run').scene.restart(); else g.scene.start('Run');
     return `→ stage ${DK.run.stage || 1} room ${DK.run.room + 1} (${R[DK.run.room].type})`;
@@ -22,7 +27,7 @@
         'heal()/hp(n)': '回满 / 设置血量', 'die()': '立即阵亡', 'win()': '立刻击败 Boss（需在 Boss 房）', 'bossHp(n)': '设置 Boss 血量（会触发阶段）', 'bossPhase(n)': '跳到 Boss 阶段 2/3',
         'spawn(type,n)': '刷怪 charger/rifle/sniper/heavy/camel/jumper/grenadier；spawn(type,x,y) 在指定点立即生成', 'stage(n,room?)': '切到第 n 关（2=沙海）的第 room 个房间', 'special(kind)': '固定第二关特殊房 hostage/merchant/rest', 'growth()': '成长系数与敌人血量倍率', 'jumpers()': '跳兵闪避冷却/次数/日志', 'grenadeLog()': '每颗手雷：引信/落点/半径/预警圈出现时间', 'camelLog()': '骆驼冲锋预警时间', 'bossInfo()': 'Boss 状态（含沙鲸）', 'passive()': '马克被动/弹壳回收计数', 'grenades(n)': '设置手雷数', 'scrap(n)': '给永久废铁', 'deaths(n)': '设置死亡次数', 'armor(n)': '设置装甲等级',
         'dmgLog(n=30)': '打印最近 n 条伤害日志（console.table），返回数组', 'clearLog()': '清空伤害日志', 'logOn(bool)': '开/关伤害日志', 'audioLog(n)': '最近播放的声音',
-        'autoFire(on)': '自动对最近的敌人开火（测试用）', 'speed(x)': '游戏速度倍率', 'state()': '当前状态快照', 'assets()': '素材加载报告', 'base()': '回基地（放弃本轮，不计死亡）', 'reset()': '清空存档'
+        'autoFire(on)': '自动对最近的敌人开火（测试用）', 'speed(x)': '游戏速度倍率', 'state()': '当前状态快照', 'assets()': '素材加载报告', 'intro()': '开机动画状态', 'skipIntro()': '跳过开机动画', 'base()': '回基地（放弃本轮，不计死亡）', 'reset()': '清空存档'
       };
       console.table(h); return Object.keys(h);
     },
@@ -43,10 +48,10 @@
     throwAt(x, y, fromX, fromY) { const s = inRun(); if (!s) return 'no'; return DK.enemyGrenade(s, { x: fromX != null ? fromX : x - 200, y: fromY != null ? fromY : y }, x, y).log; },
     bossInfo() { const s = inRun(); const b = s && s.boss; if (!b) return null; return { name: b.cfg.name, hp: Math.round(b.hp), maxHp: b.maxHp, phase: b.phase, mode: b.mode, targetable: b.targetable !== false, active: b.active, plateRed: +(b.plateRed || 0).toFixed(3), plateLost: Math.round(b.plateLost || 0), locked: b.armorLocked(), coreHits: b.coreHits, shellHits: b.shellHits, minions: b.minionsSpat, streamShots: b.streamShots, rings: b.ringsFired, rams: b.rams, burrowBlocks: b.burrowBlocks, storm: !!(s.stormFx), log: (b.log || []).slice() }; },
     passive() { const s = inRun(); const p = s && s.player; return p ? { powerShots: p.powerShots, poweredFired: p.poweredFired, dashes: p.dashes, recycled: p.recycled, recycleN: p.recycleN, grenades: s.run.grenades } : null; },
-    tutorial(mode) { const g = DK.game; DK.tutorialMode = mode || 'replay'; ['Base', 'Result', 'Run'].forEach(k => g.scene.isActive(k) && g.scene.stop(k)); g.scene.start('Run'); return 'tutorial ' + DK.tutorialMode; },
+    tutorial(mode) { const g = DK.game; DK.tutorialMode = mode || 'replay'; ['Intro', 'Base', 'Result', 'Run'].forEach(k => g.scene.isActive(k) && g.scene.stop(k)); g.scene.start('Run'); return 'tutorial ' + DK.tutorialMode; },
     tutStep() { const s = inRun(); return s && s.tut ? { i: s.tut.i, id: s.tut.step ? s.tut.step.id : 'done' } : null; },
     tutNext() { const s = inRun(); if (!s || !s.tut) return 'no tutorial'; s.tut.next(); return s.tut.step ? s.tut.step.id : 'done'; },
-    base() { DK.run = null; const g = DK.game; ['Run', 'Result'].forEach(k => g.scene.isActive(k) && g.scene.stop(k)); g.scene.start('Base'); return 'base'; },
+    base() { DK.run = null; const g = DK.game; ['Intro', 'Run', 'Result'].forEach(k => g.scene.isActive(k) && g.scene.stop(k)); g.scene.start('Base'); return 'base'; },
     skip() {
       const s = inRun(); if (!s) return 'not in a room';
       if (s.state === 'fight') { s.wave = (s.room.waves || []).length; }
@@ -82,9 +87,12 @@
     speed(x) { const s = scene(); if (s) { s.time.timeScale = x; s.physics && (s.physics.world.timeScale = 1 / x); s.tweens.timeScale = x; } return x; },
     reset() { DK.resetMeta(); DK.run = null; return 'save cleared — reload the page'; },
     assets() { return DK.assetReport; },
+    intro() { return DK.introInfo ? DK.introInfo() : null; },
+    skipIntro() { if (DK.skipBootIntro) DK.skipBootIntro(); return DK.introInfo ? DK.introInfo() : 'no intro'; },
     state() {
       const s = scene(), r = run(), key = s && s.scene ? s.scene.key : null, o = { scene: key, meta: Object.assign({}, DK.meta), god: !!DK.god };
       if (r) Object.assign(o, { room: r.room + 1, stage: r.stage || 1, roomType: (DK.roomsFor(r)[r.room] || {}).type, special: r.special2 ? r.special2.kind : null, hp: r.hp, maxHp: r.maxHp, weapon: r.weapon, mag: r.mag[r.weapon], ammoTypes: r.ammoTypes.slice(), mods: Object.keys(r.mods), grenades: r.grenades, scrap: r.scrap, kills: r.kills, taken: r.taken.slice() });
+      if (key === 'Intro') Object.assign(o, { intro: DK.introInfo ? DK.introInfo() : { scene: 'Intro' }, dialogue: false, modal: false });
       if (key === 'Run') Object.assign(o, { state: s.state, wave: s.wave + 1, enemies: s.enemies.getChildren().filter(e => e.alive).length, pending: s.pending, doorOpen: !!(s.door && s.door.open), modal: !!s.modal, dialogue: s.dlg.active, player: { x: Math.round(s.player.x), y: Math.round(s.player.y) },
         tutorial: s.tut ? (s.tut.step ? s.tut.step.id : 'done') : null, aim: { precise: s.player.precise, bursts: s.player.bursts, burstCd: +s.player.burstCd.toFixed(2), assisted: s.player.assisted || 0 },
         boss: s.boss ? { name: s.boss.cfg.name, hp: Math.round(s.boss.hp), phase: s.boss.phase, active: s.boss.active, alive: s.boss.alive, mode: s.boss.mode || null, targetable: s.boss.targetable !== false } : null, escapes: s.escapes || 0, nudges: s.nudges || 0, grenadesLive: (s.eGrenades || []).length });

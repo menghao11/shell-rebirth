@@ -74,7 +74,7 @@
       }
       const kb = this.input.keyboard;
       kb && kb.on('keydown-E', () => { if (!this.isPaused()) this.interact(); });
-      DK.music(this, 'bgm_stage1');
+      DK.music(this, this.cache.audio.exists('bgm_title') ? 'bgm_title' : 'bgm_stage1');
       // first launch -> intro
       if (!meta.introSeen) {
         this.time.delayedCall(400, () => this.dlg.show(DK.lines(DK.story.intro), () => { meta.introSeen = true; DK.saveMeta(); }));

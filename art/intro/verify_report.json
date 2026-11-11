@@ -1,0 +1,384 @@
+{
+  "errors": [],
+  "intro_keys": 11,
+  "intro_frames": 93,
+  "pod_ground_max_offset_px": 1.0,
+  "pod_ground_range_px": 0.0,
+  "shell_spin_centroid_dev_px": 0.59,
+  "logo_shine_preserves_silhouette": true,
+  "circle_target_xy_radius_err_px": 0.0,
+  "circle_radius_px": [
+    107.5,
+    107.5
+  ],
+  "old_ellipse_radii_px": [
+    107.5,
+    46.5
+  ],
+  "wall_seams": {
+    "wall_desert": {
+      "seam_x": 4.19,
+      "interior_x": 7.68,
+      "seam_y": 8.06,
+      "interior_y": 8.82,
+      "ratio": 0.914
+    },
+    "wall_desert_128": {
+      "seam_x": 7.57,
+      "interior_x": 10.14,
+      "seam_y": 7.79,
+      "interior_y": 12.31,
+      "ratio": 0.747
+    }
+  },
+  "portrait_edges": {
+    "top_row_px": 0,
+    "right_col_px": 0,
+    "left_col_px": 343
+  },
+  "turret_core_fit": {
+    "boss_turret": {
+      "art_aspect": 2.5,
+      "logical_aspect": 2.5,
+      "anchor_norm": [
+        0.3,
+        0.5
+      ],
+      "game_origin": [
+        0.3,
+        0.5
+      ]
+    },
+    "sw_turret": {
+      "art_aspect": 2.308,
+      "logical_aspect": 2.308,
+      "anchor_norm": [
+        0.25,
+        0.5
+      ],
+      "game_origin": [
+        0.25,
+        0.5
+      ]
+    },
+    "sw_core": {
+      "art_aspect": 1.0,
+      "logical_aspect": 1.0,
+      "anchor_norm": [
+        0.5,
+        0.5
+      ],
+      "game_origin": [
+        0.5,
+        0.5
+      ]
+    }
+  },
+  "rows": [
+    {
+      "name": "intro_logo",
+      "frames": 1,
+      "frame_size": [
+        1600,
+        640
+      ],
+      "anchor": [
+        800,
+        320
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": true,
+      "distinct": 1
+    },
+    {
+      "name": "intro_logo_shine",
+      "frames": 16,
+      "frame_size": [
+        1600,
+        640
+      ],
+      "anchor": [
+        800,
+        320
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": true,
+      "distinct": 16
+    },
+    {
+      "name": "intro_shell_spin",
+      "frames": 12,
+      "frame_size": [
+        256,
+        256
+      ],
+      "anchor": [
+        128,
+        128
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 12
+    },
+    {
+      "name": "intro_shell_rest",
+      "frames": 1,
+      "frame_size": [
+        256,
+        256
+      ],
+      "anchor": [
+        128,
+        128
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "intro_flash",
+      "frames": 8,
+      "frame_size": [
+        512,
+        512
+      ],
+      "anchor": [
+        256,
+        256
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": true,
+      "distinct": 8
+    },
+    {
+      "name": "intro_glint",
+      "frames": 8,
+      "frame_size": [
+        128,
+        128
+      ],
+      "anchor": [
+        64,
+        64
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": true,
+      "distinct": 8
+    },
+    {
+      "name": "intro_steam_burst",
+      "frames": 14,
+      "frame_size": [
+        512,
+        512
+      ],
+      "anchor": [
+        256,
+        480
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": true,
+      "distinct": 14
+    },
+    {
+      "name": "intro_steam_loop",
+      "frames": 12,
+      "frame_size": [
+        512,
+        512
+      ],
+      "anchor": [
+        256,
+        480
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": true,
+      "distinct": 12
+    },
+    {
+      "name": "intro_pod_blink",
+      "frames": 4,
+      "frame_size": [
+        640,
+        640
+      ],
+      "anchor": [
+        320,
+        610
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 4
+    },
+    {
+      "name": "intro_pod_open",
+      "frames": 16,
+      "frame_size": [
+        640,
+        640
+      ],
+      "anchor": [
+        320,
+        610
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 16
+    },
+    {
+      "name": "intro_title_bg",
+      "frames": 1,
+      "frame_size": [
+        1920,
+        1080
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "grenade_target_circle",
+      "frames": 8,
+      "frame_size": [
+        256,
+        256
+      ],
+      "anchor": [
+        128,
+        128
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 8
+    },
+    {
+      "name": "wall_desert",
+      "frames": 1,
+      "frame_size": [
+        256,
+        256
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "wall_desert_128",
+      "frames": 1,
+      "frame_size": [
+        128,
+        128
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "sw_turret",
+      "frames": 1,
+      "frame_size": [
+        240,
+        104
+      ],
+      "anchor": [
+        60,
+        52
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "sw_core",
+      "frames": 1,
+      "frame_size": [
+        208,
+        208
+      ],
+      "anchor": [
+        104,
+        104
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "sandwhale_portrait",
+      "frames": 1,
+      "frame_size": [
+        512,
+        512
+      ],
+      "anchor": [
+        256,
+        512
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    },
+    {
+      "name": "s2_landing_target",
+      "frames": 8,
+      "frame_size": [
+        256,
+        128
+      ],
+      "anchor": [
+        128,
+        64
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 8
+    },
+    {
+      "name": "boss_turret",
+      "frames": 1,
+      "frame_size": [
+        440,
+        176
+      ],
+      "anchor": [
+        132,
+        88
+      ],
+      "magenta_fringe": 0,
+      "distant_haze": 0,
+      "soft_alpha": false,
+      "distinct": 1
+    }
+  ],
+  "pass": true
+}

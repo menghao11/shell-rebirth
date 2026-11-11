@@ -12,7 +12,7 @@
     input: { activePointers: 4, touch: { capture: true } },
     audio: { disableWebAudio: false },
     fps: { target: 60 },
-    scene: [DK.BootScene, DK.BaseScene, DK.RunScene, DK.ResultScene]
+    scene: [DK.BootScene, DK.IntroScene, DK.BaseScene, DK.RunScene, DK.ResultScene]
   });
   // Adaptive render resolution: only sustained low fps (foreground, active gameplay), never gameplay size.
   DK.renderLocked = localStorage.getItem('dk_render_lock') === '1';
