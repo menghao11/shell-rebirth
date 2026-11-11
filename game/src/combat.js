@@ -4,6 +4,7 @@
   DK.setupCamera = function (scene) {
     const cam = scene.cameras.main;
     cam.setOrigin(0, 0).setZoom(DK.R).setScroll(0, 0);
+    if (DK.installNoShake) DK.installNoShake(cam);
     // no cam.setBounds(): Phaser clamps scroll assuming a centred origin, which shifts the world by W/2 when zoom (DPR) > 1
     scene.physics && scene.physics.world && scene.physics.world.setBounds(0, 0, DK.W, DK.H);
   };
@@ -109,12 +110,20 @@
     }
     // depth sorts by the feet line so the 3/4 view overlaps correctly
     feetY() { return this.spr.y + (this.spr.skin ? this.spr.skin.lift : DK.PLAYER.radius); }
-    animate(moving) {
+    animate(moving, dt) {
       const spr = this.spr; if (!spr.realSkin) return;
       const mg = this.run && this.run.weapon === 'mg';
+      // Hold "moving" for 90ms so a one-frame input gap can't restart run or pop into the shoot pose.
+      if (moving) this._moveHold = 0.09; else this._moveHold = Math.max(0, (this._moveHold || 0) - (dt || 0));
+      const shown = !!(moving || this._moveHold > 0);
+      this.shownMoving = shown;
+      if (this._dashAnimT > 0) this._dashAnimT = Math.max(0, this._dashAnimT - (dt || 0));
+      const dashKey = spr.skin && spr.skin.anims && spr.skin.anims.dash;
+      const dashPlaying = !!(spr.anims && spr.anims.isPlaying && spr.anims.currentAnim && spr.anims.currentAnim.key === dashKey);
+      const dashing = this.dashT > 0 || this._dashAnimT > 0 || dashPlaying;
       // moving always shows the run cycle (legs keep walking while auto-fire / aim / burst run); the shoot pose is for standing still
-      const st = this.dead ? 'death' : this.dashT > 0 ? 'dash' : this.throwT > 0 ? 'throw' : this.hurtT > 0 ? 'hurt'
-        : moving ? 'run' : this.reloadT > 0 ? 'reload' : this.shootT > 0 ? (mg ? 'shoot_mg' : 'shoot') : 'idle';
+      const st = this.dead ? 'death' : dashing ? 'dash' : this.throwT > 0 ? 'throw' : this.hurtT > 0 ? 'hurt'
+        : shown ? 'run' : this.reloadT > 0 ? 'reload' : this.shootT > 0 ? (mg ? 'shoot_mg' : 'shoot') : 'idle';
       DK.anim(spr, st);
     }
     swap(dir) {
@@ -144,8 +153,8 @@
       const s = this.scene, P = DK.PLAYER, spr = this.spr;
       this.spr.setDepth(this.feetY()); this.gun.setDepth(this.feetY() + 1);
       this.hurtT -= dt; this.throwT -= dt; this.shootT -= dt;
-      if (this.dead) { spr.setVelocity(0); this.animate(false); return; }
-      if (this.paused() || (s.inputBlockUntil && s.time.now < s.inputBlockUntil)) { spr.setVelocity(0); this.drain(); this.grenadeAim = false; this.precise = false; this.animate(false); if (this.aimG) this.aimG.clear(); return; }
+      if (this.dead) { spr.setVelocity(0); this.animate(false, dt); return; }
+      if (this.paused() || (s.inputBlockUntil && s.time.now < s.inputBlockUntil)) { spr.setVelocity(0); this.drain(); this.grenadeAim = false; this.precise = false; this.animate(false, dt); if (this.aimG) this.aimG.clear(); return; }
       const k = this.keys, tc = this.scene.touch, mouse = s.input.mousePointer;
       const { mx, my } = this.input(); this.moving = !!(mx || my);
       if (mx || my) { const l = Math.hypot(mx, my); this.moveDir = { x: mx / l, y: my / l }; }
@@ -177,6 +186,13 @@
         this.charges--; if (this.dashCdT <= 0) this.dashCdT = P.dashCd;
         if (this.canFight) this.powerShots = P.passiveShots; // 马克被动: dash → next 3 shots +50 %
         this.dashT = P.dashTime; this.dashes++; this.dashDir = (mx || my) ? { x: this.moveDir.x, y: this.moveDir.y } : { x: Math.cos(this.aimAng), y: Math.sin(this.aimAng) };
+        // Visual length of the dash sheet (play_fps is n/dashTime ≈ 70). If a frame
+        // would still be in flight when dashT hits 0, a short tail finishes it; dashTime itself is unchanged.
+        const da = DK.ARTX && DK.ARTX.hero_dash;
+        const dn = (da && da.frame_count) || 12;
+        const dfps = (da && da.play_fps) || (DK.animRate && DK.animRate(da)) || (dn / P.dashTime);
+        this._dashAnimT = dn / dfps;
+        if (spr.realSkin) DK.anim(spr, 'dash', { restart: true });
         DK.sfx(s, 'dash');
       }
       if (this.dashT > 0) {
@@ -185,11 +201,13 @@
       } else spr.setVelocity(mx * P.speed, my * P.speed);
       this.iframes -= dt;
       // ---- visuals
-      const left = Math.cos(this.aimAng) < 0;
+      const ac = Math.cos(this.aimAng);
+      if (ac < -0.18) this._faceLeft = true; else if (ac > 0.18) this._faceLeft = false;
+      const left = this._faceLeft == null ? ac < 0 : this._faceLeft;
       if ((DK.ART.player || {}).flip !== false) spr.setFlipX(left);
       spr.setAlpha(this.iframes > 0 && !this.dashT && Math.floor(s.time.now / 70) % 2 ? 0.5 : 1);
       this.gun.setPosition(spr.x + Math.cos(this.aimAng) * 6, spr.y + 6 + Math.sin(this.aimAng) * 6).setRotation(this.aimAng).setFlipY(left);
-      this.animate(this.moving);
+      this.animate(this.moving, dt);
       if (this.aimG) this.drawAim(wantFire, precise);
       if (!this.canFight || !this.run) return;
       // ---- weapon
@@ -241,7 +259,7 @@
       o = o || {};
       const s = this.scene, r = this.run, base = o.ang != null ? o.ang : this.aimAng;
       this.shots++; this.shootT = w.id === 'mg' ? 0.15 : 0.3;
-      if (w.id !== 'mg' && this.spr.realSkin && this.dashT <= 0 && this.reloadT <= 0 && !this.moving) DK.anim(this.spr, 'shoot', { restart: true, startFrame: 1 }); // hero_shoot fires on 01; no shoot-pose restart while walking
+      if (w.id !== 'mg' && this.spr.realSkin && this.dashT <= 0 && this.reloadT <= 0 && !this.moving && !this.shownMoving) DK.anim(this.spr, 'shoot', { restart: true, startFrame: 1 }); // hero_shoot fires on 01; no shoot-pose restart while walking
       if (!o.burst) this.fireCd = Math.max(this.fireCd, -1 / w.rate) + 1 / w.rate; // accumulate so 4/s and 10/s are exact (review P1-2)
       let dmg = w.dmg, crit = Math.random() < w.crit || (r.mods.fifth && this.shots % 5 === 0);
       if (crit) dmg *= DK.PLAYER.critMul;
@@ -261,7 +279,6 @@
       DK.sfx(s, powered ? 'shoot_pistol_power' : w.sfx, { minGap: 40 });
       s.muzzleFlash(mx, my, base, powered);
       s.ejectCasing(this.x, this.y, base);
-      s.cameras.main.shake(50, (powered ? 0.004 : w.id === 'mg' ? 0.0015 : 0.0025));
     }
     ghost() {
       const sp = this.spr, g = this.scene.add.image(this.x, this.y, sp.texture.key, sp.frame.name).setOrigin(sp.originX, sp.originY).setScale(sp.scaleX, sp.scaleY).setFlipX(sp.flipX).setTintFill(0x7ee07a).setAlpha(0.45).setDepth(sp.depth - 1);

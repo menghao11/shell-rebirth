@@ -549,22 +549,26 @@
         320,
         320
       ],
-      "frame_count": 4,
+      "frame_count": 8,
       "frames": [
         "enemies/grenadier/grenadier_idle_00.png",
         "enemies/grenadier/grenadier_idle_01.png",
         "enemies/grenadier/grenadier_idle_02.png",
-        "enemies/grenadier/grenadier_idle_03.png"
+        "enemies/grenadier/grenadier_idle_03.png",
+        "enemies/grenadier/grenadier_idle_04.png",
+        "enemies/grenadier/grenadier_idle_05.png",
+        "enemies/grenadier/grenadier_idle_06.png",
+        "enemies/grenadier/grenadier_idle_07.png"
       ],
       "anchor": [
         160,
         300
       ],
-      "fps": 6,
+      "fps": 8,
       "loop": true,
       "purpose": "Subtle breathing idle from same video identity.",
       "sheet": "enemies/grenadier/grenadier_idle_sheet.png",
-      "sheet_layout": "4x1 horizontal strip",
+      "sheet_layout": "8x1 horizontal strip",
       "source": "Native Grok video opening breathing segment",
       "status": "review_loop",
       "entity": "grenadier"
@@ -768,22 +772,26 @@
         640,
         512
       ],
-      "frame_count": 4,
+      "frame_count": 8,
       "frames": [
         "enemies/camel_mounted/camel_mounted_idle_00.png",
         "enemies/camel_mounted/camel_mounted_idle_01.png",
         "enemies/camel_mounted/camel_mounted_idle_02.png",
-        "enemies/camel_mounted/camel_mounted_idle_03.png"
+        "enemies/camel_mounted/camel_mounted_idle_03.png",
+        "enemies/camel_mounted/camel_mounted_idle_04.png",
+        "enemies/camel_mounted/camel_mounted_idle_05.png",
+        "enemies/camel_mounted/camel_mounted_idle_06.png",
+        "enemies/camel_mounted/camel_mounted_idle_07.png"
       ],
       "anchor": [
         320,
         490
       ],
-      "fps": 6,
+      "fps": 8,
       "loop": true,
       "purpose": "camel_mounted: idle; video-derived polished cartoon animation.",
       "sheet": "enemies/camel_mounted/camel_mounted_idle_sheet.png",
-      "sheet_layout": "4x1 horizontal strip",
+      "sheet_layout": "8x1 horizontal strip",
       "entity": "camel_mounted",
       "source": "stage2/video2/camel_mounted/side-idle",
       "sampling": "sprite-gen engine strip -> manual equal-pose-distance selection (loops uniform) -> per-frame opaque feet-band registration",
@@ -1022,22 +1030,26 @@
         320,
         320
       ],
-      "frame_count": 4,
+      "frame_count": 8,
       "frames": [
         "enemies/camel_foot/camel_foot_idle_00.png",
         "enemies/camel_foot/camel_foot_idle_01.png",
         "enemies/camel_foot/camel_foot_idle_02.png",
-        "enemies/camel_foot/camel_foot_idle_03.png"
+        "enemies/camel_foot/camel_foot_idle_03.png",
+        "enemies/camel_foot/camel_foot_idle_04.png",
+        "enemies/camel_foot/camel_foot_idle_05.png",
+        "enemies/camel_foot/camel_foot_idle_06.png",
+        "enemies/camel_foot/camel_foot_idle_07.png"
       ],
       "anchor": [
         160,
         300
       ],
-      "fps": 6,
+      "fps": 8,
       "loop": true,
       "purpose": "camel_foot: idle; video-derived polished cartoon animation.",
       "sheet": "enemies/camel_foot/camel_foot_idle_sheet.png",
-      "sheet_layout": "4x1 horizontal strip",
+      "sheet_layout": "8x1 horizontal strip",
       "entity": "camel_foot",
       "source": "stage2/video2/camel_foot/side-idle",
       "sampling": "sprite-gen engine strip -> manual equal-pose-distance selection (loops uniform) -> per-frame opaque feet-band registration",
@@ -1184,22 +1196,26 @@
         320,
         320
       ],
-      "frame_count": 4,
+      "frame_count": 8,
       "frames": [
         "enemies/jumper/jumper_idle_00.png",
         "enemies/jumper/jumper_idle_01.png",
         "enemies/jumper/jumper_idle_02.png",
-        "enemies/jumper/jumper_idle_03.png"
+        "enemies/jumper/jumper_idle_03.png",
+        "enemies/jumper/jumper_idle_04.png",
+        "enemies/jumper/jumper_idle_05.png",
+        "enemies/jumper/jumper_idle_06.png",
+        "enemies/jumper/jumper_idle_07.png"
       ],
       "anchor": [
         160,
         300
       ],
-      "fps": 6,
+      "fps": 8,
       "loop": true,
       "purpose": "jumper: idle; video-derived polished cartoon animation.",
       "sheet": "enemies/jumper/jumper_idle_sheet.png",
-      "sheet_layout": "4x1 horizontal strip",
+      "sheet_layout": "8x1 horizontal strip",
       "entity": "jumper",
       "source": "stage2/video2/jumper/side-idle",
       "sampling": "sprite-gen engine strip -> manual equal-pose-distance selection (loops uniform) -> per-frame opaque feet-band registration",

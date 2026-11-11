@@ -45,7 +45,7 @@
       const s = this.scene, B = this.cfg; this.phase = n; this.phaseT = 0; this.invulnT = B.phaseInvuln;
       if (!this.targetable) { this.setBurrowed(false); }
       this.mode = 'surface'; this.modeT = 1.5; this.trail = null; this.lane = null; this.spr.setVelocity(0);
-      s.cameras.main.shake(400, 0.01); DK.sfx(s, 'explosion_large');
+      if (DK.hitFlash) DK.hitFlash([this.spr, this.turret, this.core], 60); if (DK.impactFlash) DK.impactFlash(s, { color: 0xe0c58a, alpha: 0.16, ms: 110 }); if (DK.hitStop) DK.hitStop(s, 50); DK.sfx(s, 'explosion_large');
       s.explode(this.x + rnd(-50, 50), this.y + rnd(-30, 30), 50, 0, { src: 'fx', visualOnly: true });
       const P = (DK.story2.boss_sandwhale.phases || [])[n - 1];
       DK.banner(s, n === 2 ? '第二阶段 · ' + (P ? P.name : '沙暴') + ' · 视野降低' : '第三阶段 · ' + (P ? P.name : '开膛') + ' · 打发光的核心！', { color: '#ffb04e', size: 28, dur: 1800 });
@@ -152,7 +152,7 @@
           if (!tr.locked && this.modeT <= 0.55) { tr.locked = true; this.laneAng = Math.atan2(p.y - tr.y, p.x - tr.x); this.lane = { x: tr.x, y: tr.y, a: this.laneAng, len: B.ramSpeed * B.ramTime, t0: this.T() }; DK.sfx(s, 'sniper_warn', { volume: 0.5 }); this.log.push({ ev: 'lane', at: this.T() }); }
           if (this.modeT <= 0) { // burst out: emerge (not hittable until the art's surface_hittable frame), then ram
             this.mode = 'emerge'; this.modeT = this.emergeT(); this.trail = null; spr.setAlpha(1); this.oneShot('emerge');
-            s.explode(spr.x, spr.y + 20, 46, 0, { src: 'fx', visualOnly: true, size: 0.6 }); s.cameras.main.shake(220, 0.01); DK.sfx(s, 'explosion_small');
+            s.explode(spr.x, spr.y + 20, 46, 0, { src: 'fx', visualOnly: true, size: 0.6 }); if (DK.impactFlash) DK.impactFlash(s, { color: 0xe0c58a, alpha: 0.12, ms: 80 }); DK.sfx(s, 'explosion_small');
             this.log.push({ ev: 'ram', at: this.T() });
           }
           break;
@@ -167,7 +167,7 @@
           if (this.modeT <= 0 || out) {
             spr.setVelocity(0); spr.setAngle(0); this.lane = null;
             spr.body.reset(Phaser.Math.Clamp(spr.x, 110, W - 110), Phaser.Math.Clamp(spr.y, B.minY, H - 70));
-            if (out) { s.cameras.main.shake(160, 0.008); s.spark(spr.x, spr.y, 0xc89a5a, 8); }
+            if (out) { if (DK.impactFlash) DK.impactFlash(s, { color: 0xc89a5a, alpha: 0.12, ms: 80 }); s.spark(spr.x, spr.y, 0xc89a5a, 8); }
             this.mode = 'surface'; this.modeT = this.phase === 3 ? B.rollEvery : this.phase === 2 ? B.surfaceT * 1.8 : B.surfaceT;
           }
           break;

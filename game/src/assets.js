@@ -105,6 +105,7 @@
     }
     // ---- stage 2 (art/stage2/manifest.json in the art-team format, audio/stage2/*.mp3 + MANIFEST.md volumes, story/stage2.json)
     await discoverStage2(plan, seen);
+    await applyFramesV2(plan, seen);
     // ---- story
     const storyDir = P.story.replace(/[^/]+$/, ''), storyFile = P.story.split('/').pop();
     const stFiles = await listDir(storyDir);
@@ -150,6 +151,46 @@
     if (sf === null || sf.includes(P.story2.split('/').pop())) { plan.story2 = P.story2; DK.assetReport.stage2.story = true; }
   }
 
+
+  // Optional drop-in character frames (art/frames_v2/manifest.json). Same keys overlay ARTX.
+  async function ingestFramesMan(plan, seen, urlBase, man) {
+    if (!man || !Array.isArray(man.assets)) return;
+    DK.assetReport.framesV2 = DK.assetReport.framesV2 || { used: 0, keys: [] };
+    const note = name => {
+      if (DK.assetReport.framesV2.keys.indexOf(name) >= 0) return; // Boot + MainLoad both discover; don't double-count
+      DK.assetReport.framesV2.keys.push(name);
+      DK.assetReport.framesV2.used++;
+    };
+    for (const a0 of man.assets) {
+      if (!a0 || !a0.name) continue;
+      const existing = DK.ARTX[a0.name];
+      // Main manifest + art_web already carry this v2 sheet (web ≤4096). Do not
+      // replace that URL with the raw 5120px source (iPhone / WebGL texture cap).
+      if (existing && (existing.frame_count || 1) >= (a0.frame_count || 1)) { note(a0.name); continue; }
+      const a = Object.assign({ res_scale: 1, x_offset: 0 }, a0);
+      const fs = a.frame_size || null, n = a.frame_count || 1;
+      const url = n > 1 && a.sheet && fs ? a.sheet : (a.file || (a.frames && a.frames[0]) || a.sheet);
+      if (!url) continue;
+      DK.ARTX[a.name] = a;
+      const entry = { key: a.name, url: urlBase + url, frames: n > 1 && a.sheet && fs ? { w: fs[0], h: fs[1] } : null };
+      const idx = plan.images.findIndex(im => im.key === a.name);
+      if (idx >= 0) plan.images[idx] = entry; else plan.images.push(entry);
+      seen.add(a.name);
+      note(a.name);
+    }
+  }
+  async function applyFramesV2(plan, seen) {
+    const P = DK.PATHS; if (!P.artFramesV2) return;
+    DK.assetReport.framesV2 = { used: 0, keys: [] };
+    const files = await listDir(P.artFramesV2);
+    const man = (files === null || (files && files.includes('manifest.json'))) ? await fetchJson(P.artFramesV2 + 'manifest.json') : null;
+    await ingestFramesMan(plan, seen, P.artFramesV2, man);
+    // stage-2 pack lives in art/frames_v2/stage2/manifest.json (same format)
+    const s2files = await listDir(P.artFramesV2 + 'stage2/');
+    const s2 = (s2files === null || (s2files && s2files.includes('manifest.json'))) ? await fetchJson(P.artFramesV2 + 'stage2/manifest.json') : null;
+    await ingestFramesMan(plan, seen, P.artFramesV2 + 'stage2/', s2);
+  }
+
   DK.queueAssets = function (scene, plan) {
     for (const im of plan.images) {
       if (im.frames && im.frames.w) scene.load.spritesheet(im.key, im.url, { frameWidth: im.frames.w, frameHeight: im.frames.h || im.frames.w });
@@ -160,6 +201,43 @@
     if (plan.story2) scene.load.json('story2', plan.story2);
   };
 
+
+  // Designed cycle durations from the shipping sheets. When 画图王 drops more frames
+  // under the same key, frameRate scales so the cycle length (and therefore foot
+  // timing vs PLAYER.speed) stays the same. Override with asset.cycle_s if needed.
+  DK.ANIM_BASELINE = {
+    hero_idle: { n: 4, fps: 6 }, hero_run: { n: 8, fps: 14, lockCycle: true }, hero_shoot: { n: 6, fps: 16 },
+    hero_shoot_mg: { n: 4, fps: 15 }, hero_reload: { n: 4, fps: 8 }, hero_dash: { n: 6, fps: 18 },
+    hero_throw: { n: 6, fps: 14 }, hero_hurt: { n: 3, fps: 12 }, hero_death: { n: 8, fps: 10 }
+  };
+  // Locomotion family: keep the cycle progress when switching run ↔ shoot while moving.
+  DK.ANIM_KEEP = {
+    hero_run: 'hero_loco', hero_idle: 'hero_loco', hero_shoot: 'hero_loco', hero_shoot_mg: 'hero_loco'
+  };
+  DK.animRate = function (a) {
+    if (!a) return 8;
+    const n = a.frame_count || 1;
+    if (a.cycle_s && n > 1) return n / a.cycle_s;
+    // Dash must finish inside PLAYER.dashTime (0.17s) — 12 frames → ~70.6 fps.
+    // The manifest's 36 fps would take 0.33s and get cut off when the dash ends.
+    // Gameplay dashTime is not changed; this is playback only.
+    if (a.name === 'hero_dash' && n > 1) {
+      const dur = (DK.PLAYER && DK.PLAYER.dashTime) || 0.17;
+      return n / dur;
+    }
+    const b = DK.ANIM_BASELINE[a.name];
+    if (b && b.n > 0 && n !== b.n) {
+      // hero_run: keep the v1 stride (8/14 ≈ 0.571s) so feet match speed 215
+      // (16 @ 24 would be 0.67s / ~143 px per cycle vs the old ~123).
+      if (b.lockCycle) return (b.fps || 8) * (n / b.n);
+      // Author already retimed fps (e.g. frames_v2 suggested rates) — trust the manifest.
+      // Only auto-scale when they bumped frame_count but left the old fps in place.
+      if (a.fps && a.fps !== b.fps) return a.fps;
+      return (b.fps || 8) * (n / b.n);
+    }
+    return a.fps || 8;
+  };
+
   // After loading: mark what's real, make animations, build placeholders for the rest.
   DK.finalizeAssets = function (scene) {
     // animations for every art-team sheet (key = asset name)
@@ -167,7 +245,8 @@
       if (!scene.textures.exists(name)) { DK.assetReport.art[name] = 'failed'; continue; }
       DK.assetReport.art[name] = 'file';
       if ((a.frame_count || 1) > 1 && !scene.anims.exists(name)) {
-        scene.anims.create({ key: name, frames: scene.anims.generateFrameNumbers(name, { start: 0, end: a.frame_count - 1 }), frameRate: a.fps || 8, repeat: a.loop ? -1 : 0 });
+        const fps = DK.animRate(a); a.play_fps = fps;
+        scene.anims.create({ key: name, frames: scene.anims.generateFrameNumbers(name, { start: 0, end: a.frame_count - 1 }), frameRate: fps, repeat: a.loop ? -1 : 0 });
       }
     }
     for (const key of Object.keys(DK.ART)) {
@@ -253,8 +332,21 @@
     if (cur && cur.key === name && !(opts && opts.restart)) {
       if (obj.anims.isPlaying || !(DK.ARTX[name] && DK.ARTX[name].loop)) return true;
     }
+    let startFrame = (opts && opts.startFrame) || 0;
+    let keep = null;
+    const fam = DK.ANIM_KEEP && DK.ANIM_KEEP[name];
+    if (!(opts && opts.restart) && fam && cur && DK.ANIM_KEEP[cur.key] === fam && cur.key !== name && obj.anims.getProgress) {
+      keep = obj.anims.getProgress();
+    }
     DK.skinOrigin(obj, name);
-    obj.play({ key: name, startFrame: (opts && opts.startFrame) || 0 });
+    if (keep != null) {
+      const n = (DK.ARTX[name] && DK.ARTX[name].frame_count) || 1;
+      startFrame = Math.max(0, Math.min(n - 1, Math.round(keep * n) % n));
+      obj.play({ key: name, startFrame });
+      try { if (obj.anims.setProgress) obj.anims.setProgress(keep); } catch (e) {}
+    } else {
+      obj.play({ key: name, startFrame });
+    }
     return true;
   };
   DK.animFrame = function (obj, state, frame) { // hold a single frame of a state (e.g. sniper aim)

@@ -53,7 +53,8 @@ window.DK = window.DK || {};
   // ---- paths (relative to game/index.html). Missing files fall back to placeholders.
   DK.PATHS = { art: '../art/', artWebDir: 'assets/art_web/', artWeb2Dir: 'assets/art_web2/', audio: '../audio/', story: '../story/story.json',
     art2: '../art/stage2/', audio2: '../audio/stage2/', story2: '../story/stage2.json', audio2Prefix: 's2_',
-    artIntro: '../art/intro/', artIntroWeb: 'assets/intro/', audioIntro: '../audio/intro/' }; // stage 2 + boot-intro (see scenes/INTRO_ASSETS.md)
+    artIntro: '../art/intro/', artIntroWeb: 'assets/intro/', audioIntro: '../audio/intro/',
+    artFramesV2: '../art/frames_v2/' }; // optional extra character frames (see /workspace/rogue-demo/art/FRAMES_V2_EXPECTED.md)
 
   // ---- touch controls (logical px; iPhone landscape ≈ 1.4 logical px per pt). Buttons are laid out in run.js / base.js.
   DK.TOUCH = { stickR: 95, knobR: 40, hitPad: 8, fireAimDead: 18, aimDead: 16, fullAt: 0.75, ghost: [150, 150] };

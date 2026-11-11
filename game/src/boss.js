@@ -23,7 +23,7 @@
     setPhase(n) {
       if (n <= this.phase) return;
       const s = this.scene; this.phase = n; this.phaseT = 0; this.invulnT = this.cfg.phaseInvuln; this.cannonTele = null;
-      s.cameras.main.shake(400, 0.01); DK.sfx(s, 'explosion_large');
+      if (DK.hitFlash) DK.hitFlash([this.spr, this.turret], 60); if (DK.impactFlash) DK.impactFlash(s, { alpha: 0.16, ms: 110 }); if (DK.hitStop) DK.hitStop(s, 50); DK.sfx(s, 'explosion_large');
       s.explode(this.x + Phaser.Math.Between(-50, 50), this.y + Phaser.Math.Between(-30, 30), 50, 0, { src: 'fx', visualOnly: true });
       DK.banner(s, n === 2 ? '第二阶段 · 补充兵员 / 铺设地雷' : '第三阶段 · 履带损坏 · 全方位弹幕', { color: '#ff5a4e', size: 28, dur: 1800 });
       const lines = DK.lines(DK.story.boss_anvil[n === 2 ? 'phase2' : 'phase3']);
@@ -128,7 +128,7 @@
           if (this.cannonTele.t <= 0) {
             const a = this.turretAng, mx = tx + Math.cos(a) * 80, my = ty + Math.sin(a) * 80;
             s.enemyShoot(mx, my, a, B.cannonSpeed, B.cannonDmg, 'boss_cannon', { cannon: true });
-            DK.sfx(s, 'tank_cannon'); s.cameras.main.shake(180, 0.008); s.muzzleFlash(mx, my, a, true, 2.2);
+            DK.sfx(s, 'tank_cannon'); if (DK.impactFlash) DK.impactFlash(s, { alpha: 0.14, ms: 80 }); if (DK.hitStop) DK.hitStop(s, 40); s.muzzleFlash(mx, my, a, true, 2.2);
             this.cannonTele = null; this.t.cannon = this.phase === 1 ? 3.0 : 4.6;
           }
         }

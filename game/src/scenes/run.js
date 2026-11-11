@@ -430,8 +430,8 @@
       p.iframes = DK.PLAYER.hurtIframes;
       DK.logDamage({ src, tgt: 'player', amt, hp: run.hp });
       DK.sfx(this, 'player_hurt', { minGap: 80 });
-      this.cameras.main.shake(140, 0.008); this.cameras.main.flash(90, 160, 0, 0);
-      p.hurtT = 0.22; p.spr.setTintFill(0xffffff); this.time.delayedCall(80, () => p.spr.active && p.spr.clearTint());
+      if (DK.hurtVignette) DK.hurtVignette(this, { alpha: 0.22, ms: 180 });
+      p.hurtT = 0.22; if (DK.hitFlash) DK.hitFlash(p.spr, 60); else { p.spr.setTintFill(0xffffff); this.time.delayedCall(80, () => p.spr.active && p.spr.clearTint()); }
       DK.floatText(this, p.x, p.y - 30, '-' + amt, '#ff6a6a', 16);
       if (run.hp <= 0) this.playerDie(src);
       return true;
@@ -458,7 +458,8 @@
       this.tweens.add({ targets: ring, scale: 1, alpha: 0, duration: o.steam ? 450 : 300, onComplete: () => ring.destroy() });
       if (o.steam) for (let i = 0; i < 10; i++) { const a = i / 10 * PI2, c = this.add.circle(x, y, rnd(8, 16), 0xffffff, 0.7).setDepth(852); this.tweens.add({ targets: c, x: x + Math.cos(a) * r, y: y + Math.sin(a) * r, alpha: 0, scale: 2, duration: 600, onComplete: () => c.destroy() }); }
       if (o.visualOnly) return;
-      this.cameras.main.shake(o.steam ? 260 : 200, o.steam ? 0.012 : 0.008 * size);
+      if (DK.impactFlash) DK.impactFlash(this, { color: o.steam ? 0xe0f8ff : 0xfff2d0, alpha: 0.14, ms: 90 });
+      if (DK.hitStop) DK.hitStop(this, o.steam ? 50 : 40);
       if (!o.quiet) DK.sfx(this, o.steam ? 'explosion_steam' : (r >= 60 ? 'explosion_large' : 'explosion_small'), { minGap: 50 });
       if (dmg <= 0) return;
       if (o.hurtEnemies !== false) {
@@ -664,7 +665,8 @@
       if (this.stage === 2) return this.startBoss2();
       this.state = 'bossintro';
       this.tweens.add({ targets: b.spr, y: 150, duration: 1600, ease: 'Sine.easeOut', onUpdate: () => b.update(0) });
-      this.cameras.main.shake(1600, 0.004);
+      if (DK.impactFlash) DK.impactFlash(this, { color: 0xffe8d0, alpha: 0.12, ms: 140 });
+      for (let i = 0; i < 5; i++) this.time.delayedCall(i * 280, () => this.spark && this.spark(b.x + (Math.random() - 0.5) * 80, b.y + 20 + Math.random() * 20, 0xc8b080, 6));
       const first = !DK.meta.bossSeen;
       DK.meta.bossSeen = (DK.meta.bossSeen || 0) + 1; DK.saveMeta();
       this.time.delayedCall(1700, () => {
@@ -675,7 +677,7 @@
     startBoss2() { // 沙鲸 rises out of the sand
       const b = this.boss, S = DK.story2.boss_sandwhale; this.state = 'bossintro';
       b.spr.setAlpha(0); b.turret.setAlpha(0); b.spr.body.enable = false;
-      this.cameras.main.shake(1800, 0.005); DK.sfx(this, 's2_camel_groan_2', { volume: 0.8 });
+      if (DK.impactFlash) DK.impactFlash(this, { color: 0xe0c58a, alpha: 0.12, ms: 140 }); DK.sfx(this, 's2_camel_groan_2', { volume: 0.8 });
       for (let i = 0; i < 6; i++) this.time.delayedCall(i * 230, () => this.spark(b.x + rnd(-80, 80), b.y + rnd(-10, 40), 0xe0c58a, 8));
       this.time.delayedCall(1300, () => { this.tweens.add({ targets: [b.spr, b.turret], alpha: 1, duration: 500 }); b.spr.body.enable = true; this.explode(b.x, b.y + 20, 70, 0, { src: 'fx', visualOnly: true }); });
       const first = !DK.meta.boss2Seen; DK.meta.boss2Seen = (DK.meta.boss2Seen || 0) + 1; DK.saveMeta();

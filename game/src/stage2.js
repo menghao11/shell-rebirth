@@ -194,7 +194,7 @@
       const b = e.body, hitWall = b.blocked.left || b.blocked.right || b.blocked.up || b.blocked.down || b.touching.left || b.touching.right || b.touching.up || b.touching.down;
       if (e.chargeLeft <= 0 || (hitWall && e.chargeLeft < c.chargeTime - 0.08) || e.hitDone) {
         e.state = 'stun'; e.stunLeft = hitWall ? c.stunT : c.stunT * 0.5; e.contactDmgNow = 0; e.setVelocity(0);
-        if (hitWall) { scene.cameras.main.shake(120, 0.005); scene.spark(e.x + Math.cos(e.chargeAng) * 26, e.y + Math.sin(e.chargeAng) * 20, 0xc89a5a, 6); }
+        if (hitWall) { if (DK.hitFlash) DK.hitFlash(e, 60); scene.spark(e.x + Math.cos(e.chargeAng) * 26, e.y + Math.sin(e.chargeAng) * 20, 0xc89a5a, 6); }
       }
       return;
     }

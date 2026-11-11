@@ -22,7 +22,7 @@
     const prev = DK.R; DK.R = next;
     DK.game.scale.resize(DK.W * next, DK.H * next);
     DK.game.scene.getScenes(true).forEach(scene => {
-      scene.cameras.main.setSize(DK.W * next, DK.H * next).setOrigin(0, 0).setZoom(next).setScroll(0, 0);
+      const cam = scene.cameras.main; cam.setSize(DK.W * next, DK.H * next).setOrigin(0, 0).setZoom(next).setScroll(0, 0); if (DK.installNoShake) DK.installNoShake(cam);
     });
     DK.renderHistory.push({ from: prev, to: next, fps: DK.game.loop.actualFps });
     lowFor = 0; graceUntil = performance.now() + 3000;

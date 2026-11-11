@@ -30,18 +30,18 @@
     224,
     224
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "standing idle, breathing",
    "sheet": "characters/hero/hero_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"characters/hero/hero_idle_sheet.png\",\"characters/hero/hero_idle_00.png\",[320,320],4,[160,300]]",
+   "src_sig": "[\"characters/hero/hero_idle_sheet.png\",\"characters/hero/hero_idle_00.png\",[320,320],8,[160,300]]",
    "x_offset": 0
   },
   {
@@ -51,18 +51,18 @@
     224,
     224
    ],
-   "frame_count": 8,
+   "frame_count": 16,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 14,
+   "fps": 24,
    "loop": true,
    "purpose": "run cycle (also walk), 8 distinct poses from a Grok video clip",
    "sheet": "characters/hero/hero_run_sheet.png",
-   "sheet_layout": "8x1 horizontal strip",
+   "sheet_layout": "16x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"characters/hero/hero_run_sheet.png\",\"characters/hero/hero_run_00.png\",[320,320],8,[160,300]]",
+   "src_sig": "[\"characters/hero/hero_run_sheet.png\",\"characters/hero/hero_run_00.png\",[320,320],16,[160,300]]",
    "x_offset": 0
   },
   {
@@ -72,18 +72,18 @@
     224,
     224
    ],
-   "frame_count": 6,
+   "frame_count": 9,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 16,
+   "fps": 30,
    "loop": false,
    "purpose": "pistol shot: 00 brace, 01 fire (flash; spawn bullet), 02 recoil, 03 second-shot flash (optional double tap), 04-05 recover",
    "sheet": "characters/hero/hero_shoot_sheet.png",
-   "sheet_layout": "6x1 horizontal strip",
+   "sheet_layout": "9x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"characters/hero/hero_shoot_sheet.png\",\"characters/hero/hero_shoot_00.png\",[320,320],6,[160,300]]",
+   "src_sig": "[\"characters/hero/hero_shoot_sheet.png\",\"characters/hero/hero_shoot_00.png\",[320,320],9,[160,300]]",
    "x_offset": 0
   },
   {
@@ -93,18 +93,18 @@
     224,
     224
    ],
-   "frame_count": 4,
+   "frame_count": 9,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 15,
+   "fps": 30,
    "loop": true,
    "purpose": "machine-gun fire loop (hip fire, casings)",
    "sheet": "characters/hero/hero_shoot_mg_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "9x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"characters/hero/hero_shoot_mg_sheet.png\",\"characters/hero/hero_shoot_mg_00.png\",[320,320],4,[160,300]]",
+   "src_sig": "[\"characters/hero/hero_shoot_mg_sheet.png\",\"characters/hero/hero_shoot_mg_00.png\",[320,320],9,[160,300]]",
    "x_offset": 0
   },
   {
@@ -114,18 +114,18 @@
     224,
     224
    ],
-   "frame_count": 4,
+   "frame_count": 10,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 8,
+   "fps": 9,
    "loop": false,
    "purpose": "reload (trigger 'next shot +50%' glint on last frame)",
    "sheet": "characters/hero/hero_reload_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "10x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"characters/hero/hero_reload_sheet.png\",\"characters/hero/hero_reload_00.png\",[320,320],4,[160,300]]",
+   "src_sig": "[\"characters/hero/hero_reload_sheet.png\",\"characters/hero/hero_reload_00.png\",[320,320],10,[160,300]]",
    "x_offset": 0
   },
   {
@@ -135,18 +135,18 @@
     224,
     224
    ],
-   "frame_count": 6,
+   "frame_count": 12,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 18,
+   "fps": 36,
    "loop": false,
    "purpose": "space dash / dodge-roll: 00 crouch, 01-03 roll, 04-05 pop up",
    "sheet": "characters/hero/hero_dash_sheet.png",
-   "sheet_layout": "6x1 horizontal strip",
+   "sheet_layout": "12x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"characters/hero/hero_dash_sheet.png\",\"characters/hero/hero_dash_00.png\",[320,320],6,[160,300]]",
+   "src_sig": "[\"characters/hero/hero_dash_sheet.png\",\"characters/hero/hero_dash_00.png\",[320,320],12,[160,300]]",
    "x_offset": 0
   },
   {
@@ -550,18 +550,18 @@
     224,
     224
    ],
-   "frame_count": 2,
+   "frame_count": 6,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 4,
+   "fps": 6,
    "loop": true,
    "purpose": "tied up, waiting for rescue",
    "sheet": "npc/hostage/hostage_tied_sheet.png",
-   "sheet_layout": "2x1 horizontal strip",
+   "sheet_layout": "6x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"npc/hostage/hostage_tied_sheet.png\",\"npc/hostage/hostage_tied_00.png\",[320,320],2,[160,300]]",
+   "src_sig": "[\"npc/hostage/hostage_tied_sheet.png\",\"npc/hostage/hostage_tied_00.png\",[320,320],6,[160,300]]",
    "x_offset": 0
   },
   {
@@ -592,18 +592,18 @@
     224,
     224
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "one-eyed veteran quartermaster polishing his revolver (idle loop)",
    "sheet": "npc/laoqiang/laoqiang_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"npc/laoqiang/laoqiang_idle_sheet.png\",\"npc/laoqiang/laoqiang_idle_00.png\",[320,320],4,[160,300]]",
+   "src_sig": "[\"npc/laoqiang/laoqiang_idle_sheet.png\",\"npc/laoqiang/laoqiang_idle_00.png\",[320,320],8,[160,300]]",
    "x_offset": 0
   },
   {
@@ -632,18 +632,18 @@
     224,
     224
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "echo-pod repair robot bobbing on its treads, screen blinks (idle loop)",
    "sheet": "npc/lingjian/lingjian_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"npc/lingjian/lingjian_idle_sheet.png\",\"npc/lingjian/lingjian_idle_00.png\",[320,320],4,[160,300]]",
+   "src_sig": "[\"npc/lingjian/lingjian_idle_sheet.png\",\"npc/lingjian/lingjian_idle_00.png\",[320,320],8,[160,300]]",
    "x_offset": 0
   },
   {
@@ -672,18 +672,18 @@
     224,
     224
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     112.0,
     210.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "chubby shady arms dealer flashing the weapons in his open trench coat, brows wiggle, gold tooth sparkle on 02 (idle loop)",
    "sheet": "npc/merchant/merchant_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "res_scale": 0.7,
-   "src_sig": "[\"npc/merchant/merchant_idle_sheet.png\",\"npc/merchant/merchant_idle_00.png\",[320,320],4,[160,300]]",
+   "src_sig": "[\"npc/merchant/merchant_idle_sheet.png\",\"npc/merchant/merchant_idle_00.png\",[320,320],8,[160,300]]",
    "x_offset": 0
   },
   {

@@ -565,21 +565,21 @@
     128,
     128
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     64.0,
     120.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "Subtle breathing idle from same video identity.",
    "sheet": "enemies/grenadier/grenadier_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "source": "Native Grok video opening breathing segment",
    "status": "review_loop",
    "entity": "grenadier",
    "res_scale": 0.4,
-   "src_sig": "[\"enemies/grenadier/grenadier_idle_sheet.png\",\"enemies/grenadier/grenadier_idle_00.png\",[320,320],4,[160,300]]"
+   "src_sig": "[\"enemies/grenadier/grenadier_idle_sheet.png\",\"enemies/grenadier/grenadier_idle_00.png\",[320,320],8,[160,300]]"
   },
   {
    "name": "grenadier_throw",
@@ -736,23 +736,23 @@
     256,
     205
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     128.0,
     196.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "camel_mounted: idle; video-derived polished cartoon animation.",
    "sheet": "enemies/camel_mounted/camel_mounted_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "entity": "camel_mounted",
    "source": "stage2/video2/camel_mounted/side-idle",
    "sampling": "sprite-gen engine strip -> manual equal-pose-distance selection (loops uniform) -> per-frame opaque feet-band registration",
    "standing_height": 360,
    "returns_to_start": false,
    "res_scale": 0.4,
-   "src_sig": "[\"enemies/camel_mounted/camel_mounted_idle_sheet.png\",\"enemies/camel_mounted/camel_mounted_idle_00.png\",[640,512],4,[320,490]]"
+   "src_sig": "[\"enemies/camel_mounted/camel_mounted_idle_sheet.png\",\"enemies/camel_mounted/camel_mounted_idle_00.png\",[640,512],8,[320,490]]"
   },
   {
    "name": "camel_mounted_move",
@@ -943,23 +943,23 @@
     128,
     128
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     64.0,
     120.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "camel_foot: idle; video-derived polished cartoon animation.",
    "sheet": "enemies/camel_foot/camel_foot_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "entity": "camel_foot",
    "source": "stage2/video2/camel_foot/side-idle",
    "sampling": "sprite-gen engine strip -> manual equal-pose-distance selection (loops uniform) -> per-frame opaque feet-band registration",
    "standing_height": 200,
    "returns_to_start": false,
    "res_scale": 0.4,
-   "src_sig": "[\"enemies/camel_foot/camel_foot_idle_sheet.png\",\"enemies/camel_foot/camel_foot_idle_00.png\",[320,320],4,[160,300]]"
+   "src_sig": "[\"enemies/camel_foot/camel_foot_idle_sheet.png\",\"enemies/camel_foot/camel_foot_idle_00.png\",[320,320],8,[160,300]]"
   },
   {
    "name": "camel_foot_move",
@@ -1076,23 +1076,23 @@
     128,
     128
    ],
-   "frame_count": 4,
+   "frame_count": 8,
    "anchor": [
     64.0,
     120.0
    ],
-   "fps": 6,
+   "fps": 8,
    "loop": true,
    "purpose": "jumper: idle; video-derived polished cartoon animation.",
    "sheet": "enemies/jumper/jumper_idle_sheet.png",
-   "sheet_layout": "4x1 horizontal strip",
+   "sheet_layout": "8x1 horizontal strip",
    "entity": "jumper",
    "source": "stage2/video2/jumper/side-idle",
    "sampling": "sprite-gen engine strip -> manual equal-pose-distance selection (loops uniform) -> per-frame opaque feet-band registration",
    "standing_height": 200,
    "returns_to_start": false,
    "res_scale": 0.4,
-   "src_sig": "[\"enemies/jumper/jumper_idle_sheet.png\",\"enemies/jumper/jumper_idle_00.png\",[320,320],4,[160,300]]"
+   "src_sig": "[\"enemies/jumper/jumper_idle_sheet.png\",\"enemies/jumper/jumper_idle_00.png\",[320,320],8,[160,300]]"
   },
   {
    "name": "jumper_move",
@@ -1622,7 +1622,17 @@
    "hold_last": true,
    "returns_to_start": false,
    "event_frames": {
-    "invulnerable": 7
+    "invulnerable": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ],
+    "invulnerable_from": 0
    },
    "hittable_when_held": false,
    "res_scale": 0.5,

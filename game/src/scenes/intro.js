@@ -215,7 +215,10 @@
         mode: this.mode, phase: this.phase, skipped: !!this.skipped,
         elapsed: Math.round(performance.now() - this.startedAt),
         progress: DK.introProgress || 0, ready: !!DK.ready,
-        finishing: !!this._finishing, seen: DK.introSeen()
+        finishing: !!this._finishing, wantFinish: !!this._wantFinish,
+        loadHint: this.loadHint ? (this.loadHint.text || '') : '',
+        loadHintAlpha: this.loadHint ? this.loadHint.alpha : 0,
+        seen: DK.introSeen()
       };
     }
 
@@ -341,7 +344,13 @@
         g.arc(cx, cy, rad, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p, false);
         g.strokePath();
       }
-      if (p > 0 && p < 0.995 && this.phase !== 'logo' && this.phase !== 'cta') {
+      // Cold-start skip-before-ready: finish() writes 「载入中…」 but used to be
+      // wiped here when progress was still 0 (or during logo/cta). Keep a hint
+      // on screen until the main pack finishes.
+      if (this._wantFinish && !DK.ready) {
+        if (p > 0 && p < 0.995) this.loadHint.setText('载入 ' + Math.min(99, Math.round(p * 100)) + '%').setAlpha(0.7);
+        else this.loadHint.setText('载入中…').setAlpha(0.8);
+      } else if (p > 0 && p < 0.995 && this.phase !== 'logo' && this.phase !== 'cta') {
         this.loadHint.setText('载入 ' + Math.min(99, Math.round(p * 100)) + '%').setAlpha(0.7);
       } else {
         this.loadHint.setText('').setAlpha(0);
