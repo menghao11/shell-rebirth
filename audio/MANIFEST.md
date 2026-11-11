@@ -47,6 +47,10 @@ Use `this.sound.add('bgm_stage1', { loop: true })`. MP3 has encoder delay; LAME 
 audible on some browser, use Web Audio (Phaser default) and/or set loop markers to 0 – 50.526 s (stage1) / 0 – 33.882 s (boss).
 Lossless WAV masters are in `_src/wav/` if OGG/WAV is ever preferred.
 
+
+## Revision (2026-11-11) — loop seam
+`bgm_stage1` and `bgm_boss` were post-processed in place (exact sample counts unchanged: 50.526 s / 33.882 s). The old limiter faded the first and last ≈ 8 ms of each loop; that edge fade is gone, the seam sample jump is 0, and residual DC is 0. Pre-fix copies are in `_src/old/`. The remaining last-50 ms vs first-50 ms level difference is musical (downbeat at the start of the loop), not an artifact — over a 500 ms window `bgm_stage1` is actually +1.5 dB at the end. Details and the same fix for the desert loops are in `stage2/MANIFEST.md`.
+
 ## License
 All sound effects were synthesised procedurally on this machine (numpy/scipy/sox; scripts in `_src/`). No third-party samples or downloads.
 BGM is original composition rendered with FluidSynth using the FluidR3_GM SoundFont (MIT license).
