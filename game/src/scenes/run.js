@@ -812,7 +812,8 @@
 
     // ------------------------------------------------------------- frame
     update(time, dtMs) {
-      const dt = Math.min(dtMs, 50) / 1000 * (this.time.timeScale || 1); // __dbg.speed() scales all game logic
+      if (DK.feelScale) DK.feelScale(); // clamp/resume an overdue hit-stop before stepping
+      const dt = Math.min(dtMs, 50) / 1000 * (this.time.timeScale || 1) * (DK.feelScale ? DK.feelScale() : 1); // __dbg.speed() scales all game logic
       this.gameT += dt; // logic clock (frames are capped at 50 ms, so this can run slower than wall time on a slow device)
       const paused = this.isPaused();
       this.player.update(paused ? 0 : dt);

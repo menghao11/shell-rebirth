@@ -62,4 +62,5 @@
   relayout();
   // pause audio when the tab/app is hidden (iOS)
   document.addEventListener('visibilitychange', () => { try { DK.game.sound.mute = document.hidden || DK.muted; } catch (e) {} });
+  if (DK.armHitStopWatchdog) try { DK.armHitStopWatchdog(); } catch (e) {}
 })(window.DK);
