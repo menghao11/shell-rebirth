@@ -49,7 +49,8 @@
       DK.setupCamera(this);
       this.cameras.main.setBackgroundColor('#0d0d0f');
       if (!DK.ready && !this.scene.isActive('MainLoad')) this.scene.launch('MainLoad');
-      this.scene.start('Intro');
+      const go = () => { if (this.scene.isActive()) this.scene.start('Intro'); };
+      Promise.resolve(DK._ldtkReady).then(go, go);
     }
   };
 })(window.DK);

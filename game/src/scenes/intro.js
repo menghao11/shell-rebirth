@@ -903,6 +903,9 @@
         try { this.stopIntroSnd(); } catch (e) {}
         try { this.startTitleBgm(); } catch (e) {}
         if (DK.current === this) DK.current = null;
+        // A debug jump (or a finished load) may already be in Base/Run. Don't pull the player back.
+        const cur = DK.current;
+        if (cur && cur !== this && cur.scene && cur.scene.isActive && cur.scene.isActive() && cur.scene.key !== 'Intro') return;
         try { this.scene.start('Base'); } catch (e) { try { this.scene.start('Base'); } catch (e2) {} }
       };
       try { this.fadeIntroFull(fade); } catch (e) {}

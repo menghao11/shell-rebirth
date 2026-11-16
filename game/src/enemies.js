@@ -55,6 +55,11 @@
       if (e.realSkin) DK.anim(e, 'move'); return;
     }
     const dx = p.x - e.x, dy = p.y - e.y, dist = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
+    // Distant enemies are not simulated until the player is close. Active attacks still finish.
+    if (dist > (DK.MAP_METRICS ? DK.MAP_METRICS.sleepPx : 900) && (e.state === 'move' || !e.state)) {
+      if (e.body && (e.body.velocity.x || e.body.velocity.y)) e.setVelocity(0);
+      return;
+    }
     // ---- status
     if (st.burnT > 0) {
       st.burnT -= dt; st.burnTick += dt;

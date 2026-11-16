@@ -19,7 +19,8 @@
       mag: { pistol: DK.WEAPONS.pistol.mag, mg: DK.WEAPONS.mg.mag },
       ammoTypes: [], mods: {}, grenades: DK.PLAYER.grenades, dashCharges: DK.PLAYER.dashCharges,
       dmgMul: 1, dmgUps: 0, scrap: 0, kills: 0, startTime: Date.now(), taken: [],
-      shopType: Math.random() < 0.5 ? 'merchant' : 'rest', bossSeenThisRun: false
+      shopType: Math.random() < 0.5 ? 'merchant' : 'rest', bossSeenThisRun: false,
+      mapSeed: (Math.random() * 0x7fffffff) | 0
     };
   };
   DK.run = null;

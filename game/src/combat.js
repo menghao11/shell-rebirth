@@ -169,7 +169,8 @@
         else if (mx || my) this.aimAng = Math.atan2(my, mx);
         released = this.precise && !tc.fireHeld; // lifted the thumb while aiming (sliding back to the centre first = cancel)
       } else if (mouse) {
-        this.aimAng = Math.atan2(mouse.y / DK.R - this.y, mouse.x / DK.R - this.x);
+        const wp = DK.worldPointer(this.scene, mouse);
+        this.aimAng = Math.atan2(wp.y - this.y, wp.x - this.x);
         precise = !!(mouse.leftButtonDown && mouse.leftButtonDown()) && !(s.uiLock && s.uiLock());
         released = this.precise && !precise;
       }
@@ -249,11 +250,12 @@
     grenadeTarget() {
       const G = DK.GRENADE; let tx, ty;
       const mouse = this.scene.input.mousePointer;
-      if (!DK.touchMode && mouse) { tx = mouse.x / DK.R; ty = mouse.y / DK.R; }
+      if (!DK.touchMode && mouse) { const wp = DK.worldPointer(this.scene, mouse); tx = wp.x; ty = wp.y; }
       else { tx = this.x + Math.cos(this.aimAng) * G.range * 0.8; ty = this.y + Math.sin(this.aimAng) * G.range * 0.8; }
       let dx = tx - this.x, dy = ty - this.y; const d = Math.hypot(dx, dy);
       if (d > G.range) { dx *= G.range / d; dy *= G.range / d; }
-      return { x: Phaser.Math.Clamp(this.x + dx, 40, DK.W - 40), y: Phaser.Math.Clamp(this.y + dy, 40, DK.H - 40) };
+      const box = DK.worldBox(this.scene);
+      return { x: Phaser.Math.Clamp(this.x + dx, 40, box.w - 40), y: Phaser.Math.Clamp(this.y + dy, 40, box.h - 40) };
     }
     fire(w, o) {
       o = o || {};
