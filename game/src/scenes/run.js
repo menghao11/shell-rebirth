@@ -13,7 +13,7 @@
     create() {
       // Phaser reuses the Scene instance on restart()/start(): reset ALL per-visit state here (review P0-1)
       Object.assign(this, { leaving: false, rewardOpen: false, restUsed: false, merchantTalked: false, sold: {}, hostage: null, hostageFreed: false,
-        merchantSpr: null, _waveWait: false, sparkCount: 0, bossStart: 0, pauseUI: null, touch: null, modal: null, pausedFlag: false, _immuneT: 0, gameT: 0, tut: null });
+        merchantSpr: null, _waveWait: false, sparkCount: 0, bossStart: 0, pauseUI: null, touch: null, modal: null, pausedFlag: false, _immuneT: 0, gameT: 0, tut: null, holdWave: null, map: null, worldW: 0, worldH: 0, _regionsSeen: {} });
       DK.setupCamera(this);
       const run = this.run, W = DK.W, H = DK.H;
       this.stage = DK.stageOf(this); this.eGrenades = []; this.windFx = null; this.stormFx = null; this.stormVeil = null; this.spawnGen = 0;
@@ -27,19 +27,41 @@
       this.room = room; this.state = 'start'; this.wave = -1; this.pending = 0; this.dlg = new DK.Dialogue(this);
       this.modal = null; this.pausedFlag = false; this.boss = null; this.interactables = [];
       this.cameras.main.fadeIn(250, 0, 0, 0);
-      const arena = this.stage === 2 ? DK.buildDesert(this, room) : DK.buildArena(this, { door: room.type !== 'boss', floor: room.type === 'boss' ? 'floor_boss' : room.type === 'shop' ? 'floor_shop' : 'floor', tint: room.type === 'boss' ? 0xe8d8cc : null });
-      this.walls = arena.walls; this.door = arena.door;
-      // groups
+      // groups (covers exist before an LDtk room stamps props into them)
       this.covers = this.physics.add.staticGroup();
       this.barrels = this.physics.add.staticGroup();
       this.enemies = this.physics.add.group();
       this.pBullets = this.physics.add.group({ maxSize: 260 });
       this.eBullets = this.physics.add.group({ maxSize: 400 });
       this.mines = [];
+      this.supplies = [];
       this.fxG = this.add.graphics().setDepth(800);      // telegraphs, previews, hp bars
-      this.player = new DK.Player(this, 70, H / 2, { run, canFight: true });
+      let ldtk = null;
+      if (!this.tutorial && DK.pickLdtkMap) ldtk = DK.pickLdtkMap(run, run.room);
+      let spawn = { x: 70, y: H / 2 };
+      if (ldtk && DK.installLdtkRoom) {
+        const built = DK.installLdtkRoom(this, ldtk, this.stage);
+        if (built) { this.walls = built.walls; this.door = built.door; spawn = built.spawn; }
+        else ldtk = null;
+      }
+      if (!ldtk) {
+        const arena = this.stage === 2 ? DK.buildDesert(this, room) : DK.buildArena(this, { door: room.type !== 'boss', floor: room.type === 'boss' ? 'floor_boss' : room.type === 'shop' ? 'floor_shop' : 'floor', tint: room.type === 'boss' ? 0xe8d8cc : null });
+        this.walls = arena.walls; this.door = arena.door;
+      }
+      this.player = new DK.Player(this, spawn.x, spawn.y, { run, canFight: true });
+      if (ldtk && DK.snapCamera) DK.snapCamera(this);
       // layout
-      if (this.stage === 2) {
+      if (ldtk) {
+        if (room.type === 'hostage' && ldtk.hostage) {
+          const hx = ldtk.hostage.x, hy = ldtk.hostage.y;
+          this.hostage = this.add.sprite(hx, hy, 'hostage'); DK.applySkin(this.hostage, 'hostage'); this.hostage.setDepth(hy + 18);
+          this.hostageFreed = false;
+        }
+        if (room.type === 'boss' && ldtk.boss) {
+          this.boss = this.stage === 2 ? new DK.SandWhale(this, ldtk.boss.x, ldtk.boss.y) : new DK.Boss(this, ldtk.boss.x, -90);
+        }
+        if (this.stage === 2) DK.desertWind(this);
+      } else if (this.stage === 2) {
         if (room.type === 'combat' || room.type === 'hostage') { DK.layoutDesert(this, { hostage: room.type === 'hostage' }); if (room.type === 'hostage') this.placeHostage(); }
         if (room.type === 'shop') DK.layoutDesert(this, { center: true, boss: true });
         if (room.type === 'boss') { DK.layoutDesert(this, { boss: true, center: true }); this.boss = new DK.SandWhale(this, W / 2, 230); }
@@ -204,22 +226,57 @@
     // ------------------------------------------------------------- waves
     nextWave() {
       if (this.state !== 'fight') return;
-      this.wave++;
       const waves = this.room.waves || [];
+      const upcoming = this.wave + 1;
+      if (upcoming < waves.length && this.map) {
+        const pts = this.map.spawns.filter(s => s.wave === upcoming + 1);
+        if (pts.length) {
+          let sx = 0, sy = 0;
+          for (const p of pts) { sx += p.x; sy += p.y; }
+          sx /= pts.length; sy /= pts.length;
+          if (Math.hypot(sx - this.player.x, sy - this.player.y) > DK.MAP_METRICS.activatePx) { this.holdWave = { x: sx, y: sy }; return; }
+        }
+      }
+      this.holdWave = null;
+      this.wave++;
       if (this.wave >= waves.length) return this.roomCleared();
       const spec = waves[this.wave];
-      Object.entries(spec).forEach(([type, n]) => { for (let i = 0; i < n; i++) this.time.delayedCall(i * 160, () => this.spawnWithTelegraph(type)); });
+      Object.entries(spec).forEach(([type, n]) => {
+        const marks = this.map ? this.map.spawns.filter(s => s.wave === this.wave + 1 && s.kind === type) : [];
+        for (let i = 0; i < n; i++) {
+          const m = marks[i];
+          this.time.delayedCall(i * 160, () => this.spawnWithTelegraph(type, m && m.x, m && m.y));
+        }
+      });
       if (this.wave > 0) DK.banner(this, `第 ${this.wave + 1} 波`, { size: 22, color: '#ffffff', dur: 900 });
     }
     // ---- arena containment: every enemy spawn point / position stays inside the walls (not in a wall, cover, barrel or the boss)
-    inArena(x, y, r) { const m = DK.WALL + (r || 0); return x >= m && x <= DK.W - m && y >= m && y <= DK.H - m; }
-    clampArena(x, y, r) { const m = DK.WALL + (r || 0) + 2; return { x: Phaser.Math.Clamp(x, m, DK.W - m), y: Phaser.Math.Clamp(y, m, DK.H - m) }; }
+    inArena(x, y, r) {
+      if (this.map) return x >= 8 && y >= 8 && x <= this.worldW - 8 && y <= this.worldH - 8 && !this.map.cellSolid(x, y);
+      const m = DK.WALL + (r || 0); return x >= m && x <= DK.W - m && y >= m && y <= DK.H - m;
+    }
+    clampArena(x, y, r) {
+      if (this.map) return this.map.nearest(x, y, Math.max(8, r || 8));
+      const m = DK.WALL + (r || 0) + 2; return { x: Phaser.Math.Clamp(x, m, DK.W - m), y: Phaser.Math.Clamp(y, m, DK.H - m) };
+    }
     spawnOk(x, y, r) {
-      if (!this.inArena(x, y, r + 2) || !this.rectFree(x, y, r * 2, r * 2, 6)) return false;
+      if (this.map) { if (!this.map.fits(x, y, r) || !this.rectFree(x, y, r * 2, r * 2, 6)) return false; }
+      else if (!this.inArena(x, y, r + 2) || !this.rectFree(x, y, r * 2, r * 2, 6)) return false;
       const B = this.boss; if (B && B.alive && B.spr && B.spr.body) { const b = B.spr.body; if (x + r > b.x - 6 && x - r < b.right + 6 && y + r > b.y - 6 && y - r < b.bottom + 6) return false; }
       return true;
     }
     findSpawn(r, nx, ny) {
+      if (this.map) {
+        if (nx != null) {
+          const p = this.map.nearest(nx, ny, r + 2);
+          if (this.spawnOk(p.x, p.y, r)) return p;
+        }
+        for (let y = r + 16; y < this.worldH - r; y += 48) for (let x = r + 16; x < this.worldW - r; x += 48) {
+          if (this.player && Math.hypot(x - this.player.x, y - this.player.y) < 200) continue;
+          if (this.spawnOk(x, y, r)) return { x, y };
+        }
+        return this.map.nearest(this.player ? this.player.x : this.worldW / 2, this.player ? this.player.y : this.worldH / 2, r + 2);
+      }
       if (nx != null) { // preferred point (e.g. boss adds): clamp it, then search rings around it
         const c = this.clampArena(nx, ny, r);
         for (let d = 0; d <= 240; d += 24) for (let k = 0; k < (d ? 12 : 1); k++) { const a = k / 12 * Math.PI * 2, p = this.clampArena(c.x + Math.cos(a) * d, c.y + Math.sin(a) * d, r); if (this.spawnOk(p.x, p.y, r)) return p; }
@@ -238,6 +295,7 @@
     spawnWithTelegraph(type, x, y) {
       const r = DK.ENEMIES[type].radius + 4;
       ({ x, y } = x == null || !this.spawnOk(x, y, r) ? this.findSpawn(r, x, y) : { x, y });
+      if (this.player && Math.hypot(x - this.player.x, y - this.player.y) < 100) ({ x, y } = this.findSpawn(r, x, y));
       this.pending++; const gen = this.spawnGen || 0;
       const ring = this.add.circle(x, y, 22, 0xff3030, 0.25).setStrokeStyle(2, 0xff3030).setDepth(5);
       this.tweens.add({ targets: ring, scale: 0.4, alpha: 0.9, duration: 650, onComplete: () => {
@@ -582,7 +640,7 @@
     afterReward() {
       this.rewardOpen = null;
       if (this.room.type === 'shop') return;
-      this.state = 'open'; this.door.setOpen(true);
+      this.state = 'open'; if (this.door) this.door.setOpen(true);
       DK.banner(this, '前进 ➜', { color: '#7ee07a', size: 22, y: 140, dur: 1200 });
     }
     goNextRoom() {
@@ -593,9 +651,14 @@
     }
     setupShop() {
       const run = this.run, W = DK.W, H = DK.H;
+      let sx = W / 2, sy = H / 2 - 6;
+      if (this.map) {
+        const spot = run.shopType === 'merchant' ? (this.map.merchant || this.map.rest) : (this.map.rest || this.map.merchant);
+        if (spot) { sx = spot.x; sy = spot.y; }
+      }
       if (run.shopType === 'merchant') {
         // merchant_stall (238x304, anchor 119,302 → origin ≈ 0.5,0.993) behind; merchant stands in front, depth = feet y
-        const sx = W / 2, sy = H / 2 - 6, st = DK.ARTX.merchant_stall;
+        const st = DK.ARTX.merchant_stall;
         if (DK.hasArt('merchant_stall')) {
           const sc = DK.MERCHANT_STALL_SCALE / (st.res_scale || 1);
           this.add.image(sx, sy, 'merchant_stall').setOrigin(st.anchor[0] / st.frame_size[0], st.anchor[1] / st.frame_size[1]).setScale(sc).setDepth(sy);
@@ -611,7 +674,7 @@
         this.interactables.push({ x: mx, y: mFeet + 10, r: 90, label: '交易', fn: () => this.talkMerchant() });
         this.time.delayedCall(500, () => DK.speech(this, DK.merchantLine('greet', this.stage) || { speaker: 'merchant', text: '有废铁就有货。没废铁……就看看。' }, 2400));
       } else {
-        const c = this.add.image(W / 2, H / 2, 'campfire'); DK.applyArt(c, 'campfire'); c.setDepth(c.y);
+        const c = this.add.image(sx, sy, 'campfire'); DK.applyArt(c, 'campfire'); c.setDepth(c.y);
         this.tweens.add({ targets: c, scaleY: c.scaleY * 1.08, yoyo: true, repeat: -1, duration: 300 });
         this.restUsed = false;
         this.interactables.push({ x: c.x, y: c.y, r: 80, label: '休息', fn: () => this.openRest() });
@@ -686,7 +749,7 @@
       });
     }
     dropEchoPod(b) { // 「马克·0号」: independent loot object (art: sandwhale_echo_pod_idle, spawned near the head on destroy frame 11)
-      const head = b.spr.flipX ? -1 : 1, px = Phaser.Math.Clamp(b.x + 110 * head, 120, DK.W - 120), py = Phaser.Math.Clamp(b.y + 110, 160, DK.H - 60); // in front of the head, clear of the wreck
+      const box = DK.worldBox(this), head = b.spr.flipX ? -1 : 1, px = Phaser.Math.Clamp(b.x + 110 * head, 120, box.w - 120), py = Phaser.Math.Clamp(b.y + 110, 160, box.h - 60); // in front of the head, clear of the wreck
       let pod;
       if (DK.hasArt('sandwhale_echo_pod_idle')) { const A = DK.ARTX.sandwhale_echo_pod_idle; pod = this.add.sprite(px, py, 'sandwhale_echo_pod_idle', 0).setOrigin(A.anchor[0] / A.frame_size[0], A.anchor[1] / A.frame_size[1]).setScale(0.3 / (A.res_scale || 1)); if (this.anims.exists('sandwhale_echo_pod_idle')) pod.play('sandwhale_echo_pod_idle'); }
       else { pod = this.add.image(px, py, 'echo_pod_zero'); DK.applyArt(pod, 'echo_pod_zero'); }
@@ -762,7 +825,7 @@
       h.room = DK.txt(this, DK.W / 2, 14, '', { fontSize: '14px', color: '#f2c14e', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setDepth(D + 1);
       h.scrap = DK.txt(this, DK.W - 20, 14, '', { fontSize: '15px', color: '#f2e6c9', stroke: '#000', strokeThickness: 3 }).setOrigin(1, 0).setDepth(D + 1);
       h.boss = DK.txt(this, DK.W / 2, DK.touchMode ? 78 : H - 52, '', { fontSize: '14px', color: '#ff8a7a', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(D + 1);
-      h.prompt = DK.txt(this, 0, 0, '', { fontSize: '14px', color: '#ffffff', backgroundColor: '#000000aa', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(D + 2).setVisible(false);
+      h.prompt = DK.txt(this, 0, 0, '', { fontSize: '14px', color: '#ffffff', backgroundColor: '#000000aa', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(D + 2).setVisible(false).setScrollFactor(1);
       h.pauseBtn = DK.touchMode ? DK.button(this, DK.W - 58, 62, 92, 46, '暂停', () => this.togglePause(), { fontSize: 18, depth: D + 3 })
         : DK.button(this, DK.W - 40, 52, 56, 30, '暂停', () => this.togglePause(), { fontSize: 13, depth: D + 3 });
       if (DK.god) h.god = DK.txt(this, DK.W - 20, DK.touchMode ? 90 : 74, 'GOD', { fontSize: '12px', color: '#ff0' }).setOrigin(1, 0).setDepth(D + 1);
@@ -779,10 +842,21 @@
       const ammoNames = run.ammoTypes.map(a => DK.AMMO[a].name.replace('弹', '')).join('+') || '普通';
       const mods = Object.keys(run.mods).length;
       h.info.setText(`弹种 ${ammoNames} · 手雷 ${run.grenades} · 冲刺 ${p.charges}/${run.dashCharges}${mods ? ' · 改造 ' + mods : ''}`).setPosition(20, 70);
-      for (let i = 0; i < (p.powerShots || 0); i++) g.fillStyle(0xff8a4a, 1).fillCircle(p.x - 8 + i * 8, p.y - 34, 3); // 马克被动: charged shots
-      // dash pips under the player
-      for (let i = 0; i < run.dashCharges; i++) g.fillStyle(i < p.charges ? 0x7ee07a : 0x333333, 0.9).fillCircle(p.x - (run.dashCharges - 1) * 5 + i * 10, p.y + 30, 3);
-      if (p.charges < run.dashCharges && p.dashCdT > 0) g.lineStyle(2, 0x7ee07a, 0.8).beginPath().arc(p.x, p.y, 24, -Math.PI / 2, -Math.PI / 2 + PI2 * (1 - p.dashCdT / DK.PLAYER.dashCd)).strokePath();
+      const cam = this.cameras.main, psx = p.x - cam.scrollX, psy = p.y - cam.scrollY;
+      for (let i = 0; i < (p.powerShots || 0); i++) g.fillStyle(0xff8a4a, 1).fillCircle(psx - 8 + i * 8, psy - 34, 3); // 马克被动: charged shots
+      // dash pips under the player (HUD layer is screen space)
+      for (let i = 0; i < run.dashCharges; i++) g.fillStyle(i < p.charges ? 0x7ee07a : 0x333333, 0.9).fillCircle(psx - (run.dashCharges - 1) * 5 + i * 10, psy + 30, 3);
+      if (p.charges < run.dashCharges && p.dashCdT > 0) g.lineStyle(2, 0x7ee07a, 0.8).beginPath().arc(psx, psy, 24, -Math.PI / 2, -Math.PI / 2 + PI2 * (1 - p.dashCdT / DK.PLAYER.dashCd)).strokePath();
+      const guide = (this.door && this.door.open && this.door.rect) ? { x: this.door.rect.x + this.door.rect.w / 2, y: this.door.rect.y + this.door.rect.h / 2 } : this.holdWave;
+      if (guide && this.map) {
+        const gx = guide.x - cam.scrollX, gy = guide.y - cam.scrollY;
+        if (gx < 24 || gy < 24 || gx > DK.W - 24 || gy > DK.H - 24) {
+          const ang = Math.atan2(gy - DK.H / 2, gx - DK.W / 2);
+          const ex = Phaser.Math.Clamp(DK.W / 2 + Math.cos(ang) * (DK.W / 2 - 36), 28, DK.W - 28);
+          const ey = Phaser.Math.Clamp(DK.H / 2 + Math.sin(ang) * (DK.H / 2 - 36), 28, DK.H - 28);
+          g.fillStyle(0x7ee07a, 0.9).fillTriangle(ex + Math.cos(ang) * 10, ey + Math.sin(ang) * 10, ex + Math.cos(ang + 2.4) * 8, ey + Math.sin(ang + 2.4) * 8, ex + Math.cos(ang - 2.4) * 8, ey + Math.sin(ang - 2.4) * 8);
+        }
+      }
       // room progress
       const total = DK.roomsFor(run).length;
       if (this.tutorial) h.room.setText('教学关'); else h.room.setText((this.stage === 2 ? '沙海 · ' : '') + (this.room.type === 'boss' ? 'BOSS ' + (this.boss ? this.boss.cfg.name : '') : `房间 ${run.room + 1}/${total - 1}  ${this.room.type === 'shop' ? (run.shopType === 'merchant' ? '军火商' : '休息站') : this.room.name}${this.state === 'fight' ? '  · 敌人 ' + (this.targets().length + this.pending) : ''}`));
@@ -817,6 +891,7 @@
       this.gameT += dt; // logic clock (frames are capped at 50 ms, so this can run slower than wall time on a slow device)
       const paused = this.isPaused();
       this.player.update(paused ? 0 : dt);
+      if (this.map && DK.followCamera) DK.followCamera(this);
       const g = this.fxG; g.clear();
       this.containEnemies(); // also while paused/dialogue
       if (!paused) {
@@ -833,8 +908,9 @@
           const na = cur + Phaser.Math.Clamp(d, -DK.PLAYER.assistTurn * dt, DK.PLAYER.assistTurn * dt); b.setVelocity(Math.cos(na) * sp, Math.sin(na) * sp); b.setRotation(na);
         });
         if (this.tut) this.tut.update(dt);
-        this.pBullets.getChildren().forEach(b => { if (b.active && (now - b.born > b.life || b.x < -20 || b.x > DK.W + 20 || b.y < -20 || b.y > DK.H + 20)) this.killBullet(b); });
-        this.eBullets.getChildren().forEach(b => { if (b.active && (now - b.born > 6000 || b.x < -30 || b.x > DK.W + 30 || b.y < -30 || b.y > DK.H + 30)) b.disableBody(true, true); });
+        const maxX = this.worldW || DK.W, maxY = this.worldH || DK.H;
+        this.pBullets.getChildren().forEach(b => { if (b.active && (now - b.born > b.life || b.x < -20 || b.x > maxX + 20 || b.y < -20 || b.y > maxY + 20)) this.killBullet(b); });
+        this.eBullets.getChildren().forEach(b => { if (b.active && (now - b.born > 6000 || b.x < -30 || b.x > maxX + 30 || b.y < -30 || b.y > maxY + 30)) b.disableBody(true, true); });
         // mines
         this.mines.slice().forEach(m => {
           if (!m.active) return; m.armT -= dt;
@@ -842,11 +918,28 @@
           else m.setAlpha(0.5);
         });
         // wave progression
+        if (this.holdWave && this.state === 'fight' && Math.hypot(this.holdWave.x - this.player.x, this.holdWave.y - this.player.y) <= DK.MAP_METRICS.activatePx) this.nextWave();
         if (this.state === 'fight' && this.pending === 0 && this.wave >= 0 && this.enemies.getChildren().filter(e => e.alive).length === 0) {
           this.state = 'fight'; if (!this._waveWait) { this._waveWait = true; this.time.delayedCall(600, () => { this._waveWait = false; if (this.state === 'fight' && this.pending === 0 && !this.enemies.getChildren().some(e => e.alive)) this.nextWave(); }); }
         }
+        if (this.supplies) for (const s of this.supplies) {
+          if (s.taken || Math.hypot(s.x - this.player.x, s.y - this.player.y) > 36) continue;
+          s.taken = true; if (s.spr) s.spr.destroy();
+          if (s.kind === 'Grenade') { this.run.grenades++; DK.banner(this, '隐藏补给 · 手雷 +1', { size: 18, color: '#f2c14e', dur: 900 }); DK.sfx(this, 'pickup_weapon'); }
+          else { this.run.hp = Math.min(this.run.maxHp, this.run.hp + 25); DK.banner(this, '隐藏补给 · 生命 +25', { size: 18, color: '#7ee07a', dur: 900 }); DK.sfx(this, 'pickup_health'); }
+        }
+        if (this.map) for (const piece of this.map.pieces) {
+          if (this._regionsSeen[piece.id] || !piece.region) continue;
+          if (this.player.x < piece.x || this.player.y < piece.y || this.player.x > piece.x + piece.w || this.player.y > piece.y + piece.h) continue;
+          this._regionsSeen[piece.id] = true;
+          DK.banner(this, piece.region, { size: 20, y: 168, dur: 1000 });
+        }
         // door
-        if (this.door && this.door.open && this.state !== 'dead' && this.player.x > DK.W - DK.WALL - 18 && this.player.y > this.door.y0 && this.player.y < this.door.y1) this.goNextRoom();
+        if (this.door && this.door.open && this.state !== 'dead') {
+          const p = this.player, r = this.door.rect;
+          if (r) { if (p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h) this.goNextRoom(); }
+          else if (p.x > DK.W - DK.WALL - 18 && p.y > this.door.y0 && p.y < this.door.y1) this.goNextRoom();
+        }
       }
       // fx layer
       DK.drawEnemyFx(this, g);
@@ -861,7 +954,7 @@
         for (let i = 0; i <= 14; i++) { const k = i / 14, x = p.x + (t.x - p.x) * k, y = p.y + (t.y - p.y) * k - Math.sin(k * Math.PI) * 70; g.fillStyle(0xffffff, 0.7).fillCircle(x, y, 2); }
         g.lineStyle(2, 0xff6a3a, 0.9).strokeCircle(t.x, t.y, DK.GRENADE.radius).fillStyle(0xff6a3a, 0.12).fillCircle(t.x, t.y, DK.GRENADE.radius);
       }
-      if (!DK.touchMode && !paused) { const m = this.input.mousePointer, mx = m.x / DK.R, my = m.y / DK.R; g.lineStyle(2, 0xffffff, 0.9).strokeCircle(mx, my, 8).lineBetween(mx - 13, my, mx - 5, my).lineBetween(mx + 5, my, mx + 13, my).lineBetween(mx, my - 13, mx, my - 5).lineBetween(mx, my + 5, mx, my + 13); }
+      if (!DK.touchMode && !paused) { const m = this.input.mousePointer, wpt = DK.worldPointer(this, m), mx = wpt.x, my = wpt.y; g.lineStyle(2, 0xffffff, 0.9).strokeCircle(mx, my, 8).lineBetween(mx - 13, my, mx - 5, my).lineBetween(mx + 5, my, mx + 13, my).lineBetween(mx, my - 13, mx, my - 5).lineBetween(mx, my + 5, mx, my + 13); }
       this.updateHUD();
     }
   };

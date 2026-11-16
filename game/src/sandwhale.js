@@ -126,7 +126,7 @@
       if (this.invulnT > 0) { this.invulnT -= dt; spr.setVelocity(0); return; }
       for (const k in this.t) this.t[k] -= dt * slow;
       this.modeT -= dt * slow;
-      const W = DK.W, H = DK.H;
+      const W = s.worldW || DK.W, H = s.worldH || DK.H;
       switch (this.mode) {
         case 'surface': {
           if (this.phase === 3) { // roll toward the player periodically; rings
@@ -187,7 +187,8 @@
           this.t.minion = B.minionEvery;
           const alive = s.enemies.getChildren().filter(e => e.alive).length, n = Math.min(2, B.minionMax - alive);
           const mx = spr.x + (spr.flipX ? -80 : 80);
-          for (let i = 0; i < n; i++) { s.spawnWithTelegraph((this.minionsSpat + i) % 2 ? 'grenadier' : 'jumper', Phaser.Math.Clamp(mx + rnd(-40, 40), 80, DK.W - 80), Phaser.Math.Clamp(spr.y + 70 + i * 40, 90, DK.H - 80)); }
+          const box = DK.worldBox ? DK.worldBox(s) : { w: DK.W, h: DK.H };
+          for (let i = 0; i < n; i++) { s.spawnWithTelegraph((this.minionsSpat + i) % 2 ? 'grenadier' : 'jumper', Phaser.Math.Clamp(mx + rnd(-40, 40), 80, box.w - 80), Phaser.Math.Clamp(spr.y + 70 + i * 40, 90, box.h - 80)); }
           if (n > 0) { this.oneShot('spit'); this.minionsSpat += n; DK.sfx(s, 's2_camel_groan_2', { volume: 0.6 }); this.log.push({ ev: 'spit', n, at: this.T() }); }
         }
         if (this.t.stream <= 0 && !this.stream) { this.t.stream = B.streamEvery + B.streamSweep; this.stream = { i: 0, t: 0, a0: aim - 0.75, dir: Math.random() < 0.5 ? 1 : -1 }; this.oneShot('spray', B.streamSweep * 1000); this.log.push({ ev: 'stream', at: this.T() }); }
@@ -209,7 +210,8 @@
       }
     }
     markGhost() { // the shards flash an after-image of 马克 (story: 舱体落地会短暂闪出马克的残影)
-      const s = this.scene, x = Phaser.Math.Between(150, DK.W - 150), y = Phaser.Math.Between(200, DK.H - 100);
+      const s = this.scene, box = DK.worldBox ? DK.worldBox(s) : { w: DK.W, h: DK.H };
+      const x = Phaser.Math.Between(150, Math.max(160, box.w - 150)), y = Phaser.Math.Between(200, Math.max(210, box.h - 100));
       const gh = s.add.sprite(x, y, s.player.spr.texture.key, s.player.spr.frame.name).setScale(s.player.spr.scaleX, s.player.spr.scaleY).setTintFill(0x9fe8ff).setAlpha(0).setDepth(y);
       s.tweens.add({ targets: gh, alpha: 0.55, yoyo: true, duration: 350, hold: 250, onComplete: () => gh.destroy() });
     }

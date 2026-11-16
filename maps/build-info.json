@@ -1,0 +1,7 @@
+{
+  "sha": "a8b9f8145786b53802c1a29c120a380a7abab463facbe827d9793051efce6a7e",
+  "bytes": 2203724,
+  "levels": 106,
+  "jsonVersion": "1.5.3",
+  "embedded": "game/src/ldtk-data.js"
+}

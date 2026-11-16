@@ -1,0 +1,171 @@
+{
+  "original": {
+    "viewport": [
+      960,
+      540
+    ],
+    "walkable": 437536
+  },
+  "maps": [
+    {
+      "role": "Trench",
+      "variant": 0,
+      "px": "2944x1088",
+      "walkPx": 1363968,
+      "ratio": 3.12,
+      "regions": "出发壕 / 主壕交火 / 喘息壕 / 第二道防线 / 闸门 / 隐藏弹药库"
+    },
+    {
+      "role": "Trench",
+      "variant": 1,
+      "px": "2944x1088",
+      "walkPx": 1363968,
+      "ratio": 3.12,
+      "regions": "出发壕 / 主壕交火 / 喘息壕 / 第二道防线 / 闸门 / 隐藏弹药库"
+    },
+    {
+      "role": "Crater",
+      "variant": 0,
+      "px": "1920x1728",
+      "walkPx": 1937408,
+      "ratio": 4.43,
+      "regions": "坑缘入口 / 主弹坑 / 坑沿喘息 / 坑底 / 坑道出口 / 坑壁暗仓"
+    },
+    {
+      "role": "Crater",
+      "variant": 1,
+      "px": "1920x1728",
+      "walkPx": 1937408,
+      "ratio": 4.43,
+      "regions": "坑缘入口 / 主弹坑 / 坑沿喘息 / 坑底 / 坑道出口 / 坑壁暗仓"
+    },
+    {
+      "role": "Camp",
+      "variant": 0,
+      "px": "1856x1280",
+      "walkPx": 1642496,
+      "ratio": 3.75,
+      "regions": "营门 / 俘虏营 / 人质棚 / 营地巷战 / 营后出口 / 暗补给"
+    },
+    {
+      "role": "Camp",
+      "variant": 1,
+      "px": "1856x1280",
+      "walkPx": 1642496,
+      "ratio": 3.75,
+      "regions": "营门 / 俘虏营 / 人质棚 / 营地巷战 / 营后出口 / 暗补给"
+    },
+    {
+      "role": "Mine",
+      "variant": 0,
+      "px": "2112x1280",
+      "walkPx": 1331200,
+      "ratio": 3.04,
+      "regions": "雷区入口 / 雷带 / 折返战壕 / 喘息点 / 雷区出口 / 侧壕补给"
+    },
+    {
+      "role": "Mine",
+      "variant": 1,
+      "px": "2112x1280",
+      "walkPx": 1331200,
+      "ratio": 3.04,
+      "regions": "雷区入口 / 雷带 / 折返战壕 / 喘息点 / 雷区出口 / 侧壕补给"
+    },
+    {
+      "role": "Canyon",
+      "variant": 0,
+      "px": "1728x1920",
+      "walkPx": 1669120,
+      "ratio": 3.81,
+      "regions": "谷口 / 窄谷 / 岩架 / 谷底 / 谷深处 / 谷道出口 / 岩缝"
+    },
+    {
+      "role": "Canyon",
+      "variant": 1,
+      "px": "1728x1920",
+      "walkPx": 1669120,
+      "ratio": 3.81,
+      "regions": "谷口 / 窄谷 / 岩架 / 谷底 / 谷深处 / 谷道出口 / 岩缝"
+    },
+    {
+      "role": "Ruins",
+      "variant": 0,
+      "px": "1792x2368",
+      "walkPx": 2148352,
+      "ratio": 4.91,
+      "regions": "残门 / 废墟庭院 / 帐篷喘息 / 残厅 / 废墟后院 / 废墟出口 / 倒塌暗室"
+    },
+    {
+      "role": "Ruins",
+      "variant": 1,
+      "px": "1792x2368",
+      "walkPx": 2148352,
+      "ratio": 4.91,
+      "regions": "残门 / 废墟庭院 / 帐篷喘息 / 残厅 / 废墟后院 / 废墟出口 / 倒塌暗室"
+    },
+    {
+      "role": "Depot",
+      "variant": 0,
+      "px": "1792x1920",
+      "walkPx": 2252800,
+      "ratio": 5.15,
+      "regions": "罐场入口 / 油罐巷 / 罐间喘息 / 掷弹空地 / 驼道 / 罐场出口 / 备用油桶"
+    },
+    {
+      "role": "Depot",
+      "variant": 1,
+      "px": "1792x1920",
+      "walkPx": 2252800,
+      "ratio": 5.15,
+      "regions": "罐场入口 / 油罐巷 / 罐间喘息 / 掷弹空地 / 驼道 / 罐场出口 / 备用油桶"
+    },
+    {
+      "role": "Oasis",
+      "variant": 0,
+      "px": "1792x1280",
+      "walkPx": 1556480,
+      "ratio": 3.56,
+      "regions": "营地门 / 沙丘营地 / 营地出口 / 营地外圈 / 补给帐"
+    },
+    {
+      "role": "Oasis",
+      "variant": 1,
+      "px": "1792x1280",
+      "walkPx": 1556480,
+      "ratio": 3.56,
+      "regions": "营地门 / 沙丘营地 / 营地出口 / 营地外圈 / 补给帐"
+    },
+    {
+      "role": "Shop",
+      "variant": 0,
+      "px": "1152x640",
+      "walkPx": 614400,
+      "ratio": 1.4,
+      "regions": "交易院 / 摊位"
+    },
+    {
+      "role": "Shop",
+      "variant": 1,
+      "px": "1152x640",
+      "walkPx": 614400,
+      "ratio": 1.4,
+      "regions": "交易院 / 摊位"
+    },
+    {
+      "role": "Boss",
+      "variant": 0,
+      "px": "1536x576",
+      "walkPx": 747520,
+      "ratio": 1.71,
+      "regions": "铁砧场"
+    },
+    {
+      "role": "BossDesert",
+      "variant": 0,
+      "px": "1536x576",
+      "walkPx": 747520,
+      "ratio": 1.71,
+      "regions": "沙鲸坑"
+    }
+  ]
+}

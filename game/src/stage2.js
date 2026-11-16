@@ -124,12 +124,13 @@
       x: { min: -40, max: DK.W * 0.7 }, y: { min: -20, max: DK.H + 20 }, lifespan: { min: 2600, max: 4200 },
       speedX: { min: 130, max: 240 }, speedY: { min: 5, max: 45 }, alpha: { start: 0.55, end: 0 }, scale: { min: 0.7 * k, max: 1.6 * k },
       frequency: 70, quantity: 1, maxAliveParticles: 90
-    }).setDepth(880);
+    }).setDepth(880).setScrollFactor(0);
     scene.windFx = em; scene.stormFx = null;
     if (DK.hasArt('s2_blowing_sand')) { // drifting sand gusts (12-frame sheet)
       scene.time.addEvent({ delay: 2600, loop: true, callback: () => {
         if (scene.isPaused && scene.isPaused()) return;
-        const g = scene.add.sprite(Phaser.Math.Between(60, DK.W - 200), Phaser.Math.Between(60, DK.H - 60), 's2_blowing_sand').setDepth(879).setAlpha(0.55).setScale(0.7 / ((DK.ARTX.s2_blowing_sand || {}).res_scale || 1));
+        const cam = scene.cameras.main;
+        const g = scene.add.sprite(cam.scrollX + Phaser.Math.Between(60, DK.W - 200), cam.scrollY + Phaser.Math.Between(60, DK.H - 60), 's2_blowing_sand').setDepth(879).setAlpha(0.55).setScale(0.7 / ((DK.ARTX.s2_blowing_sand || {}).res_scale || 1));
         g.play('s2_blowing_sand'); scene.tweens.add({ targets: g, x: g.x + 120, duration: 1000 }); g.once('animationcomplete', () => g.destroy());
       } });
     }
@@ -137,9 +138,9 @@
   };
   DK.setSandstorm = function (scene, on) {
     if (on && !scene.stormFx) {
-      scene.stormVeil = scene.add.rectangle(DK.W / 2, DK.H / 2, DK.W, DK.H, 0xc9a060, 0).setDepth(890);
+      scene.stormVeil = scene.add.rectangle(DK.W / 2, DK.H / 2, DK.W, DK.H, 0xc9a060, 0).setScrollFactor(0).setDepth(890);
       scene.tweens.add({ targets: scene.stormVeil, fillAlpha: S2.boss.stormAlpha, duration: 900 });
-      const k = scene.moteK || 1; scene.stormFx = scene.add.particles(0, 0, scene.moteTex || 'sand_mote', { x: { min: -60, max: DK.W }, y: { min: -20, max: DK.H + 20 }, lifespan: { min: 1400, max: 2400 }, speedX: { min: 320, max: 520 }, speedY: { min: 10, max: 80 }, alpha: { start: 0.8, end: 0 }, scale: { min: 1.2 * k, max: 2.6 * k }, frequency: 18, quantity: 2, maxAliveParticles: 160 }).setDepth(891);
+      const k = scene.moteK || 1; scene.stormFx = scene.add.particles(0, 0, scene.moteTex || 'sand_mote', { x: { min: -60, max: DK.W }, y: { min: -20, max: DK.H + 20 }, lifespan: { min: 1400, max: 2400 }, speedX: { min: 320, max: 520 }, speedY: { min: 10, max: 80 }, alpha: { start: 0.8, end: 0 }, scale: { min: 1.2 * k, max: 2.6 * k }, frequency: 18, quantity: 2, maxAliveParticles: 160 }).setScrollFactor(0).setDepth(891);
     } else if (!on && scene.stormFx) {
       const v = scene.stormVeil; scene.tweens.add({ targets: v, fillAlpha: 0, duration: 700, onComplete: () => v.destroy() });
       scene.stormFx.stop(); const f = scene.stormFx; scene.time.delayedCall(2500, () => f.destroy()); scene.stormFx = null; scene.stormVeil = null;
@@ -315,7 +316,8 @@
   DK.enemyGrenade = function (scene, e, tx, ty, o) {
     o = o || {};
     const c = DK.ENEMIES.grenadier, r = o.radius || c.blastRadius, m = DK.WALL + 12;
-    const x1 = Phaser.Math.Clamp(tx, m, DK.W - m), y1 = Phaser.Math.Clamp(ty, m, DK.H - m); // inside the arena (over cover is fine: it lands on top)
+    const box = DK.worldBox ? DK.worldBox(scene) : { w: DK.W, h: DK.H };
+    const x1 = Phaser.Math.Clamp(tx, m, box.w - m), y1 = Phaser.Math.Clamp(ty, m, box.h - m); // inside the arena (over cover is fine: it lands on top)
     const x0 = e.x, y0 = e.y - 10, now = T(scene);
     const spr = scene.add.sprite(x0, y0, 'enemy_grenade').setDepth(870); DK.applyArt(spr, 'enemy_grenade'); const spin = DK.hasArt('s2_grenade_spin'); if (spin) spr.play('s2_grenade_spin');
     const sh = scene.add.ellipse(x0, y0 + 8, 12, 5, 0x000000, 0.35).setDepth(1);

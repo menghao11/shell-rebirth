@@ -20,6 +20,7 @@
 首次点击/按键后才有声音（iOS 音频解锁）。网址参数：`?touch=1` / `?touch=0` 强制触屏/键鼠。
 
 ## 目录
+- `maps/` 两关的 LDtk 1.5.3 工程、总览图和编辑说明（`maps/README.md`）
 - `game/` 游戏代码（`src/`）、Phaser（`vendor/`）、网页版美术 `assets/art_web/`
 - `art/manifest.json` 美术清单（动画帧、锚点、帧率）
 - `audio/` 音效与 BGM（mp3）；`story/story.json` 剧情台词

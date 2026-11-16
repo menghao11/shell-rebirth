@@ -102,18 +102,20 @@
       this.turret.setRotation(this.turretAng);
       for (const k in this.t) this.t[k] -= dt * slow;
       // movement
+      const W = s.worldW || DK.W, H = s.worldH || DK.H;
       if (this.phase === 1) {
         spr.setVelocity(45 * this.dir * slow, Phaser.Math.Clamp((B.homeY - spr.y) * 3, -80, 80)); // settles on homeY within ~1 s of the entrance
-        if (spr.x > DK.W - 220) this.dir = -1; if (spr.x < 220) this.dir = 1;
+        if (spr.x > W - 220) this.dir = -1; if (spr.x < 220) this.dir = 1;
       } else if (this.phase === 2) {
         // top edge stays below the HUD title (review P2-6): sway between p2MinY and p2MinY+90, ease in fast from the phase-1 line
         const ty2 = B.p2MinY + 45 + Math.sin(s.time.now / 2400) * 45;
         spr.setVelocity(70 * this.dir * slow, Phaser.Math.Clamp((ty2 - spr.y) * 2.5, -80, 80));
         if (spr.y >= B.p2MinY) this.p2In = true;
         if (this.p2In && spr.y < B.p2MinY) { spr.y = B.p2MinY; if (spr.body.velocity.y < 0) spr.setVelocity(spr.body.velocity.x, 0); }
-        if (spr.x > DK.W - 200) this.dir = -1; if (spr.x < 200) this.dir = 1;
+        if (spr.x > W - 200) this.dir = -1; if (spr.x < 200) this.dir = 1;
       } else { // phase 3: roll to a spot where the whole barrage sprite is on screen, then stay put
-        const dx = B.p3X - spr.x, dy = B.p3Y - spr.y;
+        const p3x = (s.map && s.map.boss) ? s.map.boss.x : B.p3X;
+        const dx = p3x - spr.x, dy = B.p3Y - spr.y;
         spr.setVelocity(Math.abs(dx) > 3 ? Phaser.Math.Clamp(dx * 1.5, -90, 90) : 0, Math.abs(dy) > 3 ? Phaser.Math.Clamp(dy * 1.5, -90, 90) : 0);
       }
       if (spr.y >= B.minY) this.arrived = true; // (the entrance drives in from above, so clamp only after arriving)
@@ -145,14 +147,14 @@
         if (this.t.mine <= 0) {
           this.t.mine = 2.2; this.doAct('deploy', 0.75);
           const px = p.x, py = p.y; // boss_deploy drops the mine on frame 02
-          this.onActFrame('deploy', 2, () => { s.layMine(this.spr.x - 70 * this.dir + Phaser.Math.Between(-20, 20), this.spr.y + Phaser.Math.Between(-30, 30)); if (Math.random() < 0.5) s.layMine(Phaser.Math.Clamp(px + Phaser.Math.Between(-120, 120), 60, DK.W - 60), Phaser.Math.Clamp(py + Phaser.Math.Between(-120, 120), 60, DK.H - 60), true); });
+          this.onActFrame('deploy', 2, () => { s.layMine(this.spr.x - 70 * this.dir + Phaser.Math.Between(-20, 20), this.spr.y + Phaser.Math.Between(-30, 30)); if (Math.random() < 0.5) s.layMine(Phaser.Math.Clamp(px + Phaser.Math.Between(-120, 120), 60, W - 60), Phaser.Math.Clamp(py + Phaser.Math.Between(-120, 120), 60, H - 60), true); });
         }
         if (this.t.minion <= 0) {
           this.t.minion = 11; this.doAct('deploy', 0.75);
           this.onActFrame('deploy', 2, () => {
             if (this.phase !== 2 || !this.alive) return; // deploy frame landed after the switch to phase 3
             const alive = s.enemies.getChildren().filter(e => e.alive).length;
-            for (let i = 0; i < Math.min(2, B.minionMax - alive); i++) s.spawnWithTelegraph(Math.random() < 0.6 ? 'charger' : 'rifle', Phaser.Math.Clamp(this.spr.x + (i ? 110 : -110), 80, DK.W - 80), Phaser.Math.Clamp(this.spr.y + 90, 80, DK.H - 80));
+            for (let i = 0; i < Math.min(2, B.minionMax - alive); i++) s.spawnWithTelegraph(Math.random() < 0.6 ? 'charger' : 'rifle', Phaser.Math.Clamp(this.spr.x + (i ? 110 : -110), 80, W - 80), Phaser.Math.Clamp(this.spr.y + 90, 80, H - 80));
           });
         }
       }
