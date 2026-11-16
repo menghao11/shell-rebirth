@@ -632,6 +632,7 @@
     }
     afterDialogue(fn) { if (!this.dlg.active) return fn(); const w = this.time.addEvent({ delay: 100, loop: true, callback: () => { if (!this.dlg.active) { w.remove(); fn(); } } }); }
     offerReward(title) {
+      if (this.modal) return;
       const picks = DK.rollRewards(this.run, 3);
       if (this.touch) this.touch.reset();
       this.modal = DK.cardChoice(this, title || '三选一 · 战利品', picks.map(r => ({ title: r.name, desc: r.desc, icon: r.icon, onPick: () => { DK.applyReward(this, r.id); this.modal = null; this.afterReward(); } })), { subtitle: '点击或按 1/2/3 选择', guardMs: 500 });
