@@ -16,11 +16,18 @@
     // input guard: armed by a timer on the scene clock (scene.time.now is stale inside create(), review P1-1)
     let armed = !opts.guardMs;
     c.enabled = true;
-    bg.setInteractive({ useHandCursor: true });
+    // Hit-test the container itself. Its scrollFactor is 0, so the click stays on the
+    // on-screen card after the world camera scrolls. A child rectangle keeps scrollFactor 1,
+    // and Phaser then shifts the hit area by camera.scroll — cards draw in place but clicks miss.
+    c.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
     let downOn = false;
-    bg.on('pointerdown', () => { downOn = true; bg.setFillStyle(opts.colorDown || 0x4a5040, 1); });
-    bg.on('pointerout', () => { downOn = false; bg.setFillStyle(opts.color || 0x2b2f27, opts.alpha != null ? opts.alpha : 0.95); });
-    bg.on('pointerup', () => {
+    c.on('pointerdown', () => { downOn = true; bg.setFillStyle(opts.colorDown || 0x4a5040, 1); });
+    c.on('pointerout', () => { downOn = false; bg.setFillStyle(opts.color || 0x2b2f27, opts.alpha != null ? opts.alpha : 0.95); });
+    c.on('pointerup', () => {
       bg.setFillStyle(opts.color || 0x2b2f27, opts.alpha != null ? opts.alpha : 0.95);
       if (!downOn) return; downOn = false;
       if (!c.enabled || !armed) return;
